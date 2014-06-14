@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Utils.h"
+#include "UOInterface.h"
 
 bool LoginEncryption()
 {
@@ -70,7 +71,7 @@ bool ProtocolDecryption()
 	return result;
 }
 
-void PatchEncryption()
+UOINTERFACE_API(void) PatchEncryption()
 {
 	if (!LoginEncryption())
 		throw L"LoginEncryption";
@@ -82,7 +83,7 @@ void PatchEncryption()
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
-void PatchMulti()
+UOINTERFACE_API(void) PatchMulti()
 {
 
 }

@@ -23,10 +23,12 @@ struct CallBacks
 extern CallBacks callBacks;
 
 UOINTERFACE_API(void) SetCallbacks(CallBacks callbacks);
-UOINTERFACE_API(void) Start(LPWSTR clientPath, LPWSTR assemblyPath, LPWSTR typeName,
-	LPWSTR methodName, BOOL patchEncryption);
+UOINTERFACE_API(void) Start(LPWSTR client, LPWSTR assembly, LPWSTR type, LPWSTR method, LPWSTR args);
 
 UOINTERFACE_API(void) SetConnectionInfo(UINT address, USHORT port);
 UOINTERFACE_API(void) SendToServer(byte *buffer);
 UOINTERFACE_API(void) SendToClient(byte *buffer);
 UOINTERFACE_API(UINT) GetPacketLength(byte id);
+
+UOINTERFACE_API(void) PatchMulti();
+UOINTERFACE_API(void) PatchEncryption();

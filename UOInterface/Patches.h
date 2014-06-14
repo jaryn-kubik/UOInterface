@@ -1,2 +1,0 @@
-void PatchMulti();
-void PatchEncryption();

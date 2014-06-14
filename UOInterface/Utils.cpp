@@ -14,16 +14,6 @@ bool FindSignatureOffset(byte *signature, unsigned int len, byte **offset)
 	return false;
 }
 
-/*LPVOID CreateCALL(LPVOID source, LPVOID target, UINT len)
-{
-	memset(source, 0x90, len);
-	UINT offset = (UINT)target - (UINT)source - 5;
-	byte *data = (byte*)source;
-	data[0] = 0xE8;
-	*(UINT*)&data[1] = offset;
-	return data + len;
-}*/
-
 LPVOID CreateJMP(LPVOID source, LPVOID target, UINT len)
 {
 	memset(source, 0x90, len);
