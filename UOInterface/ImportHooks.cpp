@@ -87,7 +87,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	return oldWndProc(hwnd, msg, wParam, lParam);
 }
-
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
 CHAR clientDirA[MAX_PATH];
 DWORD WINAPI Hook_GetCurrentDirectoryA(DWORD nBufferLength, LPSTR lpBuffer)
 {
@@ -108,6 +110,36 @@ DWORD WINAPI Hook_GetCurrentDirectoryW(DWORD nBufferLength, LPWSTR lpBuffer)
 	return size;
 }
 
+HANDLE WINAPI Hook_CreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
+	LPSECURITY_ATTRIBUTES lpSecAtt, DWORD dwCreationDisposition, DWORD dwFlags, HANDLE hTemplate)
+{
+	if (PathIsRelativeA(lpFileName))
+	{
+		CHAR path[MAX_PATH];
+		PathCombineA(path, clientDirA, lpFileName);
+		return CreateFileA(path, dwDesiredAccess, dwShareMode, lpSecAtt,
+			dwCreationDisposition, dwFlags, hTemplate);
+	}
+	return CreateFileA(lpFileName, dwDesiredAccess, dwShareMode, lpSecAtt,
+		dwCreationDisposition, dwFlags, hTemplate);
+}
+
+HANDLE WINAPI Hook_CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
+	LPSECURITY_ATTRIBUTES lpSecAtt, DWORD dwCreationDisposition, DWORD dwFlags, HANDLE hTemplate)
+{
+	if (PathIsRelativeW(lpFileName))
+	{
+		WCHAR path[MAX_PATH];
+		PathCombineW(path, clientDirW, lpFileName);
+		return CreateFileW(path, dwDesiredAccess, dwShareMode, lpSecAtt,
+			dwCreationDisposition, dwFlags, hTemplate);
+	}
+	return CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecAtt,
+		dwCreationDisposition, dwFlags, hTemplate);
+}
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
 void WINAPI Hook_ExitProcess(UINT uExitCode)
 {
 	callBacks.OnExitProcess();
@@ -129,7 +161,9 @@ ATOM WINAPI Hook_RegisterClassW(WNDCLASSW *lpWndClass)
 	lpWndClass->lpfnWndProc = WndProc;
 	return RegisterClassW(lpWndClass);
 }
-
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
 UINT connect_address;
 USHORT connect_port;
 UOINTERFACE_API(void) SetConnectionInfo(UINT address, USHORT port)
@@ -173,7 +207,9 @@ int WINAPI Hook_select(int nfds, fd_set *r, fd_set *w, fd_set *e, const timeval 
 	processPackets();
 	return select(nfds, r, w, e, timeout);
 }
-
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
 void HookImports()
 {
 	GetModuleFileNameA(GetModuleHandle(NULL), clientDirA, sizeof(clientDirA));
@@ -188,6 +224,11 @@ void HookImports()
 		HookImport("kernel32.dll", "GetCurrentDirectoryW", 0, Hook_GetCurrentDirectoryW);
 	if (!result)
 		throw L"ImportHooks: GetCurrentDirectory";
+
+	result = HookImport("kernel32.dll", "CreateFileA", 0, Hook_CreateFileA) |
+		HookImport("kernel32.dll", "CreateFileW", 0, Hook_CreateFileW);
+	if (!result)
+		throw L"ImportHooks: CreateFile";
 
 	result = HookImport("user32.dll", "RegisterClassA", 0, Hook_RegisterClassA) |
 		HookImport("user32.dll", "RegisterClassW", 0, Hook_RegisterClassW);
@@ -209,7 +250,9 @@ void HookImports()
 	if (!result)
 		throw L"ImportHooks: select";
 }
-
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
 UOINTERFACE_API(void) SendToServer(byte *buffer)
 {
 	if (GetCurrentThreadId() != clientThread)

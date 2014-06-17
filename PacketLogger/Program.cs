@@ -28,6 +28,7 @@ namespace PacketLogger
                 OnRecv = onRecv
             };
             UOInterface.InstallHooks(c, true);
+            UOInterface.SetConnectionInfo(0x0100007F, 2593);//127.0.0.1, 2593
             new Thread(() => AllocConsole()).Start();
             return 0;
         }
