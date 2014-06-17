@@ -2,6 +2,7 @@
 #include "WinSock2.h"
 #include "PacketHooks.h"
 #include "UOInterface.h"
+#include "Utils.h"
 #include <condition_variable>
 
 bool HookImport(LPCSTR dll, LPCSTR function, DWORD ordinal, LPVOID hook)
@@ -11,9 +12,6 @@ bool HookImport(LPCSTR dll, LPCSTR function, DWORD ordinal, LPVOID hook)
 	PIMAGE_NT_HEADERS inh = (PIMAGE_NT_HEADERS)(base + idh->e_lfanew);
 	PIMAGE_DATA_DIRECTORY idd = &inh->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
 	PIMAGE_IMPORT_DESCRIPTOR iid = (PIMAGE_IMPORT_DESCRIPTOR)(base + idd->VirtualAddress);
-
-	DWORD oldProtect;
-	VirtualProtect((LPVOID)(base + idd->VirtualAddress), idd->Size, PAGE_READWRITE, &oldProtect);
 
 	for (; iid->Name; iid++)
 	{
@@ -30,12 +28,14 @@ bool HookImport(LPCSTR dll, LPCSTR function, DWORD ordinal, LPVOID hook)
 				PIMAGE_IMPORT_BY_NAME name = (PIMAGE_IMPORT_BY_NAME)(base + nTable->u1.AddressOfData);
 				if ((function && strcmp(name->Name, function) == 0) || ordinal == name->Hint)
 				{
+					AllowAccess(&aTable->u1.Function, sizeof(DWORD));
 					aTable->u1.Function = (DWORD)hook;
 					return true;
 				}
 			}
 			else if (ordinal == (nTable->u1.Ordinal & 0xffff))
 			{
+				AllowAccess(&aTable->u1.Function, sizeof(DWORD));
 				aTable->u1.Function = (DWORD)hook;
 				return true;
 			}

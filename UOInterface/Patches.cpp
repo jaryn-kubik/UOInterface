@@ -2,6 +2,12 @@
 #include "Utils.h"
 #include "UOInterface.h"
 
+void SetByte(byte* address, byte data)
+{
+	AllowAccess(address, sizeof(byte));
+	*address = data;
+}
+
 bool LoginEncryption()
 {
 	//1.x - 5.x
@@ -11,10 +17,10 @@ bool LoginEncryption()
 
 	bool result;
 	byte *offset;
-	if (result = FindSignatureOffset(sig1, sizeof(sig1), &offset))
-		*(offset + 0x15) = 0x84;
-	else if (result = FindSignatureOffset(sig2, sizeof(sig2), &offset))
-		*offset = 0xEB;
+	if (result = FindCode(sig1, sizeof(sig1), &offset))
+		SetByte(offset + 0x15, 0x84);
+	else if (result = FindCode(sig2, sizeof(sig2), &offset))
+		SetByte(offset, 0xEB);
 	return result;
 }
 
@@ -31,17 +37,17 @@ bool TwoFishEncryption()
 
 	bool result;
 	byte *offset;
-	if (result = FindSignatureOffset(sig1, sizeof(sig1), &offset))
-		*(offset + 8) = 0x85;
-	else if (result = FindSignatureOffset(sig2, sizeof(sig2), &offset))
-		*offset = 0xEB;
-	else if (result = FindSignatureOffset(sig3, sizeof(sig3), &offset))
-		*(offset + 0xC) = 0x85;
+	if (result = FindCode(sig1, sizeof(sig1), &offset))
+		SetByte(offset + 8, 0x85);
+	else if (result = FindCode(sig2, sizeof(sig2), &offset))
+		SetByte(offset, 0xEB);
+	else if (result = FindCode(sig3, sizeof(sig3), &offset))
+		SetByte(offset + 0xC, 0x85);
 
-	if (FindSignatureOffset(sig4, sizeof(sig4), &offset))
+	if (FindCode(sig4, sizeof(sig4), &offset))
 	{
-		*(offset + 8) = 0x3B;
-		*(offset + 0x12) = 0x3B;
+		SetByte(offset + 8, 0x3B);
+		SetByte(offset + 0x12, 0x3B);
 		result = true;
 	}
 	return result;
@@ -60,30 +66,30 @@ bool ProtocolDecryption()
 
 	bool result;
 	byte *offset;
-	if (result = FindSignatureOffset(sig1, sizeof(sig1), &offset))
-		*(offset + 0xF) = 0x3B;
-	else if (result = FindSignatureOffset(sig2, sizeof(sig2), &offset))
-		*offset = 0xEB;
-	else if (result = FindSignatureOffset(sig3, sizeof(sig3), &offset))
-		*(offset + 0x1A) = 0x3B;
-	else if (result = FindSignatureOffset(sig4, sizeof(sig4), &offset))
-		*(offset + 0xD) = 0x3B;
+	if (result = FindCode(sig1, sizeof(sig1), &offset))
+		SetByte(offset + 0xF, 0x3B);
+	else if (result = FindCode(sig2, sizeof(sig2), &offset))
+		SetByte(offset, 0xEB);
+	else if (result = FindCode(sig3, sizeof(sig3), &offset))
+		SetByte(offset + 0x1A, 0x3B);
+	else if (result = FindCode(sig4, sizeof(sig4), &offset))
+		SetByte(offset + 0xD, 0x3B);
 	return result;
 }
 
-UOINTERFACE_API(void) PatchEncryption()
+void PatchEncryption()
 {
 	if (!LoginEncryption())
-		throw L"LoginEncryption";
+		throw L"PatchEncryption: LoginEncryption";
 	if (!TwoFishEncryption())
-		throw L"TwoFishEncryption";
+		throw L"PatchEncryption: TwoFishEncryption";
 	if (!ProtocolDecryption())
-		throw L"ProtocolDecryption";
+		throw L"PatchEncryption: ProtocolDecryption";
 }
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
-UOINTERFACE_API(void) PatchMulti()
+void PatchMulti()
 {
 
 }

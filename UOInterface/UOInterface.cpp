@@ -3,9 +3,22 @@
 #include "CLRLoader.h"
 #include "ImportHooks.h"
 #include "PacketHooks.h"
+#include "Patches.h"
 
 CallBacks callBacks;
-UOINTERFACE_API(void) SetCallbacks(CallBacks callbacks) { callBacks = callbacks; }
+UOINTERFACE_API(void) InstallHooks(CallBacks callbacks, BOOL patchEncryption)
+{
+	try
+	{
+		callBacks = callbacks;
+		HookImports();
+		HookPackets();
+		if (patchEncryption)
+			PatchEncryption();
+		PatchMulti();
+	}
+	catch (LPCWSTR str) { MessageBox(0, str, L"Error", MB_ICONERROR | MB_OK); }
+}
 
 DWORD WINAPI Init(LPCWSTR info)
 {
@@ -15,17 +28,9 @@ DWORD WINAPI Init(LPCWSTR info)
 		LPCWSTR type = assembly + wcslen(assembly) + 1;
 		LPCWSTR method = type + wcslen(type) + 1;
 		LPCWSTR args = method + wcslen(method) + 1;
-
-		DWORD oldProtect;
-		VirtualProtect((LPVOID)0x00400000, 0x00200000, PAGE_EXECUTE_READWRITE, &oldProtect);
-
-		HookImports();
-		HookPackets();
-
 		return LoadCLR(assembly, type, method, args);
 	}
 	catch (LPCWSTR str) { MessageBox(0, str, L"Error", MB_ICONERROR | MB_OK); }
-	catch (...) { MessageBox(0, L"Unknown error", L"Fatal error", MB_ICONERROR | MB_OK); }
 	return EXIT_FAILURE;
 }
 

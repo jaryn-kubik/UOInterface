@@ -8,13 +8,12 @@ namespace PacketLogger
     {
         static void Main()
         {
-            UOInterface.Start("C:\\UO\\Auberon\\client.exe", null, "PacketLogger.Program", "EntryPoint", null);
+            UOInterface.Start("C:\\UO\\Test\\client.exe", null, "PacketLogger.Program", "EntryPoint", null);
         }
 
         private static UOInterface.CallBacks c;
         public static int EntryPoint(String args)
         {
-            UOInterface.PatchEncryption();
             c = new UOInterface.CallBacks
             {
                 OnDisconnect = () => { },
@@ -28,7 +27,7 @@ namespace PacketLogger
                 OnSend = onSend,
                 OnRecv = onRecv
             };
-            UOInterface.SetCallbacks(c);
+            UOInterface.InstallHooks(c, true);
             new Thread(() => AllocConsole()).Start();
             return 0;
         }
@@ -36,29 +35,41 @@ namespace PacketLogger
         private static bool onSend(byte[] buffer, int len)
         {
             WritePacket(buffer, "Client -> Server");
+            if (buffer[0] == 0xAD)
+            {//duplicate sent messages - just for fun (and for testing if it really works...)
+                byte[] asdf = new byte[len];
+                buffer.CopyTo(asdf, 0);
+                UOInterface.SendToServer(asdf);
+            }
             return false;
         }
 
         private static bool onRecv(byte[] buffer, int len)
         {
             WritePacket(buffer, "Server -> Client");
+            if (buffer[0] == 0xAE)
+            {//duplicate recieved messages - just for fun (and for testing if it really works...)
+                byte[] asdf = new byte[len];
+                buffer.CopyTo(asdf, 0);
+                UOInterface.SendToClient(asdf);
+            }
             return false;
         }
 
         private static void WritePacket(byte[] buffer, string direction)
         {
-            Console.WriteLine("{0}\t{1:X2} - {2} bytes", direction, buffer[0], buffer.Length);
+            Console.WriteLine("{0}\t {1:X2} - {2} bytes", direction, buffer[0], buffer.Length);
             Console.WriteLine(" 0  1  2  3  4  5  6  7   8  9  A  B  C  D  E  F");
             Console.WriteLine("-- -- -- -- -- -- -- --  -- -- -- -- -- -- -- --");
 
             for (int i = 0; i < buffer.Length; i++)
             {
-                if (i%16 == 0 && i != 0)
+                if (i % 16 == 0 && i != 0)
                     Console.WriteLine();
+                if (i % 8 == 0 && i % 16 != 0)
+                    Console.Write(" ");
                 Console.Write(buffer[i].ToString("X2"));
                 Console.Write(" ");
-                if (i%8 == 0 && i%16 != 0)
-                    Console.Write(" ");
             }
 
             Console.WriteLine();

@@ -79,6 +79,7 @@
     <ClInclude Include="CLRLoader.h" />
     <ClInclude Include="ImportHooks.h" />
     <ClInclude Include="PacketHooks.h" />
+    <ClInclude Include="Patches.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="UOInterface.h" />

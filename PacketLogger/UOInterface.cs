@@ -9,7 +9,7 @@ namespace PacketLogger
         public static extern void Start(string client, string assembly, string typeName, string methodName, string args);
 
         [DllImport("UOInterface.dll")]
-        public static extern void SetCallbacks(CallBacks callBacks);
+        public static extern void InstallHooks(CallBacks callBacks, bool patchEncryption);
 
         [DllImport("UOInterface.dll")]
         public static extern void SetConnectionInfo(uint address, ushort port);
@@ -22,12 +22,6 @@ namespace PacketLogger
 
         [DllImport("UOInterface.dll")]
         public static extern void SendToServer([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)]byte[] buffer);
-
-        [DllImport("UOInterface.dll")]
-        public static extern void PatchEncryption();
-
-        [DllImport("UOInterface.dll")]
-        public static extern void PatchMulti();
 
         [StructLayout(LayoutKind.Sequential)]
         public struct CallBacks
