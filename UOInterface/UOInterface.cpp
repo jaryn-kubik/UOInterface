@@ -17,7 +17,7 @@ UOINTERFACE_API(void) InstallHooks(CallBacks callbacks, BOOL patchEncryption)
 			PatchEncryption();
 		PatchMulti();
 	}
-	catch (LPCWSTR str) { MessageBox(0, str, L"Error", MB_ICONERROR | MB_OK); }
+	catch (LPCWSTR str) { MessageBoxW(nullptr, str, L"Error", MB_ICONERROR | MB_OK); }
 }
 
 DWORD WINAPI Init(LPCWSTR info)
@@ -30,7 +30,7 @@ DWORD WINAPI Init(LPCWSTR info)
 		LPCWSTR args = method + wcslen(method) + 1;
 		return LoadCLR(assembly, type, method, args);
 	}
-	catch (LPCWSTR str) { MessageBox(0, str, L"Error", MB_ICONERROR | MB_OK); }
+	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error", MB_ICONERROR | MB_OK); }
 	return EXIT_FAILURE;
 }
 
@@ -38,19 +38,19 @@ UOINTERFACE_API(void) Start(LPWSTR client, LPWSTR assembly, LPWSTR type, LPWSTR 
 {
 	WCHAR empty[1] = {};
 	WCHAR callerAssembly[MAX_PATH];
-	if (assembly == NULL)
+	if (assembly == nullptr)
 	{
-		GetModuleFileName(GetModuleHandle(0), callerAssembly, sizeof(callerAssembly));
+		GetModuleFileName(GetModuleHandle(nullptr), callerAssembly, sizeof(callerAssembly));
 		assembly = callerAssembly;
 	}
-	if (args == NULL)
+	if (args == nullptr)
 		args = empty;
 
 	//create suspended process
 	PROCESS_INFORMATION pi = {};
 	STARTUPINFOW si = {};
 	si.cb = sizeof(si);
-	CreateProcess(client, 0, 0, 0, false, CREATE_SUSPENDED, 0, NULL, &si, &pi);
+	CreateProcess(client, nullptr, nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, nullptr, &si, &pi);
 
 	//get UOInterface module and path, write it in remote process memory
 	HMODULE hDll;
@@ -58,12 +58,12 @@ UOINTERFACE_API(void) Start(LPWSTR client, LPWSTR assembly, LPWSTR type, LPWSTR 
 	WCHAR dllPath[MAX_PATH];
 	GetModuleFileName(hDll, dllPath, sizeof(dllPath));
 	SIZE_T pRemoveLen = 2 * max((wcslen(assembly) + wcslen(type) + wcslen(method) + wcslen(args) + 4), wcslen(dllPath));
-	LPVOID pRemote = (LPWSTR)VirtualAllocEx(pi.hProcess, 0, pRemoveLen, MEM_COMMIT, PAGE_READWRITE);
-	WriteProcessMemory(pi.hProcess, pRemote, dllPath, sizeof(dllPath), 0);
+	LPVOID pRemote = (LPWSTR)VirtualAllocEx(pi.hProcess, nullptr, pRemoveLen, MEM_COMMIT, PAGE_READWRITE);
+	WriteProcessMemory(pi.hProcess, pRemote, dllPath, sizeof(dllPath), nullptr);
 
 	//load UOInterface in remote process, get its module
 	LPTHREAD_START_ROUTINE pLoadLibrary = (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(L"kernel32"), "LoadLibraryW");
-	HANDLE hThread = CreateRemoteThread(pi.hProcess, 0, 0, pLoadLibrary, pRemote, 0, 0);
+	HANDLE hThread = CreateRemoteThread(pi.hProcess, nullptr, 0, pLoadLibrary, pRemote, 0, nullptr);
 	WaitForSingleObject(hThread, INFINITE);
 	DWORD hRemote;//this module adrress in created process
 	GetExitCodeThread(hThread, &hRemote);
@@ -78,7 +78,7 @@ UOINTERFACE_API(void) Start(LPWSTR client, LPWSTR assembly, LPWSTR type, LPWSTR 
 	WriteProcessMemory(pi.hProcess, pArgs += written, args, (wcslen(args) + 1) * 2, &written);
 
 	//call Init
-	hThread = CreateRemoteThread(pi.hProcess, 0, 0, (LPTHREAD_START_ROUTINE)(hRemote + (DWORD)Init - (DWORD)hDll), pRemote, 0, 0);
+	hThread = CreateRemoteThread(pi.hProcess, nullptr, 0, (LPTHREAD_START_ROUTINE)(hRemote + (DWORD)Init - (DWORD)hDll), pRemote, 0, nullptr);
 	WaitForSingleObject(hThread, INFINITE);
 	GetExitCodeThread(hThread, &hRemote);
 	CloseHandle(hThread);

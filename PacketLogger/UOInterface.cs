@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace PacketLogger
 {
@@ -26,22 +25,15 @@ namespace PacketLogger
         [StructLayout(LayoutKind.Sequential)]
         public struct CallBacks
         {//you have to keep instance of this structure alive!!!
-            public dAction OnExitProcess;
-            public dAction OnDisconnect;
-
-            public dWindowCreated OnWindowCreated;
-            public dBoolAction OnFocus;
-            public dBoolAction OnVisibility;
+            public dMessage OnMessage;
             public dKeyDown OnKeyDown;
-
             public dPacket OnRecv;
             public dPacket OnSend;
         }
 
-        public delegate void dAction();
-        public delegate void dBoolAction(bool value);
-        public delegate void dWindowCreated(IntPtr hwnd);
-        public delegate bool dKeyDown(uint key, bool prevState);
+        public enum Message : byte { ExitProcess, Disconnect, WindowCreated, Focus, Visibility};
+        public delegate void dMessage(Message msg, uint param);
+        public delegate bool dKeyDown(uint virtualKey);
         public delegate bool dPacket([In, Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = 1)]byte[] buffer, int len);
     }
 }

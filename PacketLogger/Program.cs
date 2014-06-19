@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace PacketLogger
 {
@@ -16,14 +17,8 @@ namespace PacketLogger
         {
             c = new UOInterface.CallBacks
             {
-                OnDisconnect = () => { },
-                OnExitProcess = () => { },
-
-                OnWindowCreated = a => { },
-                OnFocus = a => { },
-                OnVisibility = a => { },
-                OnKeyDown = (a, b) => false,
-
+                OnMessage = onMessage,
+                OnKeyDown = onKeyDown,
                 OnSend = onSend,
                 OnRecv = onRecv
             };
@@ -31,6 +26,28 @@ namespace PacketLogger
             UOInterface.SetConnectionInfo(0x0100007F, 2593);//127.0.0.1, 2593
             new Thread(() => AllocConsole()).Start();
             return 0;
+        }
+
+        private static void onMessage(UOInterface.Message msg, uint param)
+        {
+            Console.Write("Message: {0}", msg);
+            switch (msg)
+            {
+                case UOInterface.Message.Focus:
+                case UOInterface.Message.Visibility:
+                    Console.Write(" - {0}", param != 0);
+                    break;
+                case UOInterface.Message.WindowCreated:
+                    Console.Write(" - 0x{0:X8}", param);
+                    break;
+            }
+            Console.WriteLine();
+        }
+
+        private static bool onKeyDown(uint virtualKey)
+        {
+            Console.WriteLine("Keys: {0}", (Keys)virtualKey);
+            return false;//== do not filter
         }
 
         private static bool onSend(byte[] buffer, int len)

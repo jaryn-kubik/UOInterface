@@ -7,7 +7,7 @@
 
 bool HookImport(LPCSTR dll, LPCSTR function, DWORD ordinal, LPVOID hook)
 {
-	DWORD base = (DWORD)GetModuleHandle(NULL);
+	DWORD base = (DWORD)GetModuleHandle(nullptr);
 	PIMAGE_DOS_HEADER idh = (PIMAGE_DOS_HEADER)base;
 	PIMAGE_NT_HEADERS inh = (PIMAGE_NT_HEADERS)(base + idh->e_lfanew);
 	PIMAGE_DATA_DIRECTORY idd = &inh->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
@@ -44,6 +44,20 @@ bool HookImport(LPCSTR dll, LPCSTR function, DWORD ordinal, LPVOID hook)
 	return false;
 }
 
+BOOL OnKeyDown(UINT virtualKey)
+{
+	if (GetKeyState(VK_SHIFT) & 0xFF00)
+		virtualKey |= (1 << 16);
+
+	if (GetKeyState(VK_CONTROL) & 0xFF00)
+		virtualKey |= (1 << 17);
+
+	if (GetKeyState(VK_MENU) & 0xFF00)
+		virtualKey |= (1 << 18);
+
+	return callBacks.OnKeyDown(virtualKey);
+}
+
 DWORD clientThread;
 WPARAM keyToIgnore;
 WNDPROC oldWndProc;
@@ -52,26 +66,42 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_CREATE:
-		callBacks.OnWindowCreated(hwnd);
+		callBacks.OnMessage(Message::WindowCreated, (UINT)hwnd);
 		break;
 
 	case WM_SETFOCUS:
-		callBacks.OnFocus(TRUE);
+		callBacks.OnMessage(Message::Focus, TRUE);
 		break;
 
 	case WM_KILLFOCUS:
-		callBacks.OnFocus(FALSE);
+		callBacks.OnMessage(Message::Focus, FALSE);
 		break;
 
 	case WM_SIZE:
-		callBacks.OnVisibility(wParam != SIZE_MINIMIZED);
+		callBacks.OnMessage(Message::Visibility, wParam != SIZE_MINIMIZED);
+		break;
+
+	case WM_MBUTTONDOWN:
+		if (OnKeyDown(VK_MBUTTON))
+			return 0;
+		break;
+
+	case WM_XBUTTONDOWN:
+		if (OnKeyDown(HIWORD(wParam) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2))
+			return 0;
+		break;
+
+	case WM_MOUSEWHEEL:
+		if (OnKeyDown(GET_WHEEL_DELTA_WPARAM(wParam) < 0 ? VK_F23 : VK_F24))
+			return 0;
 		break;
 
 	case WM_SYSDEADCHAR:
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
-		if (callBacks.OnKeyDown(wParam, (lParam >> 30) & 0x1))
-		{
+		if (wParam != VK_SHIFT && wParam != VK_CONTROL && wParam != VK_MENU &&
+			(lParam & (1 << 30)) == 0 && OnKeyDown(wParam))
+		{//bit 30 == previous key state
 			keyToIgnore = lParam;
 			return 0;
 		}
@@ -142,7 +172,7 @@ HANDLE WINAPI Hook_CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD 
 //---------------------------------------------------------------------------//
 void WINAPI Hook_ExitProcess(UINT uExitCode)
 {
-	callBacks.OnExitProcess();
+	callBacks.OnMessage(Message::ExitProcess, 0);
 	ExitProcess(uExitCode);
 }
 
@@ -185,7 +215,7 @@ int WINAPI Hook_connect(SOCKET s, const sockaddr *name, int namelen)
 
 int WINAPI Hook_closesocket(SOCKET s)
 {
-	callBacks.OnDisconnect();
+	callBacks.OnMessage(Message::Disconnect, 0);
 	return closesocket(s);
 }
 
@@ -212,9 +242,9 @@ int WINAPI Hook_select(int nfds, fd_set *r, fd_set *w, fd_set *e, const timeval 
 //---------------------------------------------------------------------------//
 void HookImports()
 {
-	GetModuleFileNameA(GetModuleHandle(NULL), clientDirA, sizeof(clientDirA));
+	GetModuleFileNameA(GetModuleHandle(nullptr), clientDirA, sizeof(clientDirA));
 	PathRemoveFileSpecA(clientDirA);
-	GetModuleFileNameW(GetModuleHandle(NULL), clientDirW, sizeof(clientDirW));
+	GetModuleFileNameW(GetModuleHandle(nullptr), clientDirW, sizeof(clientDirW));
 	PathRemoveFileSpecW(clientDirW);
 
 	if (!HookImport("kernel32.dll", "ExitProcess", 0, Hook_ExitProcess))

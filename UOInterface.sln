@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PacketLogger", "PacketLogge
 		{EBBB376D-3A69-4FEC-BC0B-60679AE0B8B5} = {EBBB376D-3A69-4FEC-BC0B-60679AE0B8B5}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UOInterface.NET", "UOInterface.NET\UOInterface.NET.csproj", "{426DE295-F684-4654-87A2-43CC696E45DB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,16 @@ Global
 		{2B1B5A37-8346-4F7B-A3AE-AEE64BCCABBE}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{2B1B5A37-8346-4F7B-A3AE-AEE64BCCABBE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{2B1B5A37-8346-4F7B-A3AE-AEE64BCCABBE}.Release|Win32.ActiveCfg = Release|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{426DE295-F684-4654-87A2-43CC696E45DB}.Release|Win32.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

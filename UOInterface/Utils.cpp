@@ -1,14 +1,14 @@
 #include "stdafx.h"
 #include "Utils.h"
 
-byte* codeBase = NULL;
-byte* codeEnd = NULL;
-byte* dataBase = NULL;
-byte* dataEnd = NULL;
+byte* codeBase = nullptr;
+byte* codeEnd = nullptr;
+byte* dataBase = nullptr;
+byte* dataEnd = nullptr;
 
 void Init()
 {
-	DWORD base = (DWORD)GetModuleHandle(NULL);
+	DWORD base = (DWORD)GetModuleHandle(nullptr);
 	PIMAGE_DOS_HEADER idh = (PIMAGE_DOS_HEADER)base;
 	PIMAGE_NT_HEADERS inh = (PIMAGE_NT_HEADERS)(base + idh->e_lfanew);
 	PIMAGE_OPTIONAL_HEADER ioh = &inh->OptionalHeader;

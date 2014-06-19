@@ -6,15 +6,11 @@
 #define UOINTERFACE_API(ret) __declspec(dllexport) ret _stdcall
 #endif
 
+enum struct Message : byte { ExitProcess, Disconnect, WindowCreated, Focus, Visibility};
 struct CallBacks
 {
-	void(__stdcall *OnExitProcess)();
-	void(__stdcall *OnDisconnect)();
-
-	void(__stdcall *OnWindowCreated)(HWND hwnd);
-	void(__stdcall *OnFocus)(BOOL focus);
-	void(__stdcall *OnVisibility)(BOOL visible);
-	BOOL(__stdcall *OnKeyDown)(UINT key, BOOL prevState);
+	void(__stdcall *OnMessage)(Message msg, UINT param);
+	BOOL(__stdcall *OnKeyDown)(UINT virtualKey);
 
 	BOOL(__stdcall *OnRecv)(byte *buffer, UINT len);
 	BOOL(__stdcall *OnSend)(byte *buffer, UINT len);
