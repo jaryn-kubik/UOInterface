@@ -11,6 +11,7 @@
 // Windows Header Files:
 #include <windows.h>
 #include "Shlwapi.h"
+#include <stdio.h>
 
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Shlwapi.lib")

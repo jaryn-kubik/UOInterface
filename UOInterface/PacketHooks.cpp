@@ -2,6 +2,7 @@
 #include "Utils.h"
 #include "PacketHooks.h"
 #include "UOInterface.h"
+#include "IPC.h"
 
 UINT networkObject;
 UINT sendType;
@@ -9,7 +10,7 @@ LPVOID sendFunc;
 
 BOOL __stdcall OnSend(byte *buffer)
 {
-	return callBacks.OnSend(buffer, GetPacketLength(buffer));
+	return SendIPCData(UOMessage::PacketToServer, buffer, GetPacketLength(buffer));
 }
 
 //calls the original send function (restores overriden code)
@@ -109,7 +110,7 @@ LPVOID recvFunc;
 
 BOOL __stdcall OnRecv(byte *buffer)
 {
-	return callBacks.OnRecv(buffer, GetPacketLength(buffer));
+	return SendIPCData(UOMessage::PacketToClient, buffer, GetPacketLength(buffer));
 }
 
 __inline void __declspec(naked) __stdcall RecvHook()
@@ -200,7 +201,7 @@ bool HookRecv()
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
 struct PacketInfo{ UINT id, unknown, len; };
-PacketInfo *packetTable;
+SHORT packetTable[0x100];
 bool GetPacketTable()
 {
 	unsigned char sig[] =
@@ -213,18 +214,18 @@ bool GetPacketTable()
 	byte *offset;
 	if (!FindData(sig, sizeof(sig), &offset))
 		return false;
-	packetTable = ((PacketInfo *)offset) - 1;
+
+	PacketInfo *table = ((PacketInfo*)offset) - 1;
+	UINT unknown = table->unknown;
+	for (UINT unknown = table->unknown; table->unknown == unknown; table++)
+		packetTable[table->id] = table->len;
+
 	return true;
 }
 
-UOINTERFACE_API(UINT) GetPacketLength(byte id)
+USHORT GetPacketLength(byte* buffer)
 {
-	return packetTable[id].len;
-}
-
-UINT GetPacketLength(byte* buffer)
-{
-	UINT len = packetTable[buffer[0]].len;
+	USHORT len = packetTable[buffer[0]];
 	if (len == 0x8000)
 		len = *((USHORT *)(buffer + 1));
 	return len;

@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "WinSock2.h"
-#include "PacketHooks.h"
 #include "UOInterface.h"
+#include "PacketHooks.h"
 #include "Utils.h"
-#include <condition_variable>
+#include "IPC.h"
 
 bool HookImport(LPCSTR dll, LPCSTR function, DWORD ordinal, LPVOID hook)
 {
@@ -55,30 +55,25 @@ BOOL OnKeyDown(UINT virtualKey)
 	if (GetKeyState(VK_MENU) & 0xFF00)
 		virtualKey |= (1 << 18);
 
-	return callBacks.OnKeyDown(virtualKey);
+	return SendIPCMessage(UOMessage::KeyDown, virtualKey);
 }
 
-DWORD clientThread;
 WPARAM keyToIgnore;
 WNDPROC oldWndProc;
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
-	case WM_CREATE:
-		callBacks.OnMessage(Message::WindowCreated, (UINT)hwnd);
-		break;
-
 	case WM_SETFOCUS:
-		callBacks.OnMessage(Message::Focus, TRUE);
+		SendIPCMessage(UOMessage::Focus, TRUE);
 		break;
 
 	case WM_KILLFOCUS:
-		callBacks.OnMessage(Message::Focus, FALSE);
+		SendIPCMessage(UOMessage::Focus, FALSE);
 		break;
 
 	case WM_SIZE:
-		callBacks.OnMessage(Message::Visibility, wParam != SIZE_MINIMIZED);
+		SendIPCMessage(UOMessage::Visibility, wParam != SIZE_MINIMIZED);
 		break;
 
 	case WM_MBUTTONDOWN:
@@ -114,7 +109,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		}
 		break;
+
+	case WM_CREATE:
+		SendIPCMessage(UOMessage::WindowCreated, (UINT)hwnd);
+		SendIPCData(UOMessage::PacketLengths, &packetTable, sizeof(packetTable));
+		break;
 	}
+
+	if (msg >= (int)UOMessage::ExitProcess && msg <= (int)UOMessage::PacketToClient)
+		return RecvIPCMessage((UOMessage)msg, wParam, lParam);
 	return oldWndProc(hwnd, msg, wParam, lParam);
 }
 //---------------------------------------------------------------------------//
@@ -172,13 +175,12 @@ HANDLE WINAPI Hook_CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD 
 //---------------------------------------------------------------------------//
 void WINAPI Hook_ExitProcess(UINT uExitCode)
 {
-	callBacks.OnMessage(Message::ExitProcess, 0);
+	SendIPCMessage(UOMessage::ExitProcess);
 	ExitProcess(uExitCode);
 }
 
 ATOM WINAPI Hook_RegisterClassA(WNDCLASSA *lpWndClass)
 {
-	clientThread = GetCurrentThreadId();
 	oldWndProc = lpWndClass->lpfnWndProc;
 	lpWndClass->lpfnWndProc = WndProc;
 	return RegisterClassA(lpWndClass);
@@ -186,7 +188,6 @@ ATOM WINAPI Hook_RegisterClassA(WNDCLASSA *lpWndClass)
 
 ATOM WINAPI Hook_RegisterClassW(WNDCLASSW *lpWndClass)
 {
-	clientThread = GetCurrentThreadId();
 	oldWndProc = lpWndClass->lpfnWndProc;
 	lpWndClass->lpfnWndProc = WndProc;
 	return RegisterClassW(lpWndClass);
@@ -196,7 +197,7 @@ ATOM WINAPI Hook_RegisterClassW(WNDCLASSW *lpWndClass)
 //---------------------------------------------------------------------------//
 UINT connect_address;
 USHORT connect_port;
-UOINTERFACE_API(void) SetConnectionInfo(UINT address, USHORT port)
+void SetConnectionInfo(UINT address, USHORT port)
 {
 	connect_address = address;
 	connect_port = port;
@@ -215,27 +216,8 @@ int WINAPI Hook_connect(SOCKET s, const sockaddr *name, int namelen)
 
 int WINAPI Hook_closesocket(SOCKET s)
 {
-	callBacks.OnMessage(Message::Disconnect, 0);
+	SendIPCMessage(UOMessage::Disconnect);
 	return closesocket(s);
-}
-
-bool ready;
-unsigned int count;
-std::mutex mtx;
-std::condition_variable cv;
-void processPackets()
-{
-	std::unique_lock<std::mutex> lck(mtx);
-	ready = true;
-	cv.notify_all();
-	cv.wait(lck, []() { return count == 0; });
-	ready = false;
-}
-
-int WINAPI Hook_select(int nfds, fd_set *r, fd_set *w, fd_set *e, const timeval *timeout)
-{
-	processPackets();
-	return select(nfds, r, w, e, timeout);
 }
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
@@ -274,41 +256,4 @@ void HookImports()
 		HookImport("WS2_32.dll", "closesocket", 3, Hook_closesocket);
 	if (!result)
 		throw L"ImportHooks: closesocket";
-
-	result = HookImport("wsock32.dll", "select", 18, Hook_select) |
-		HookImport("WS2_32.dll", "select", 18, Hook_select);
-	if (!result)
-		throw L"ImportHooks: select";
-}
-//---------------------------------------------------------------------------//
-//---------------------------------------------------------------------------//
-//---------------------------------------------------------------------------//
-UOINTERFACE_API(void) SendToServer(byte *buffer)
-{
-	if (GetCurrentThreadId() != clientThread)
-	{
-		std::unique_lock<std::mutex> lck(mtx);
-		count++;
-		cv.wait(lck, []() { return ready; });
-		SendPacket(buffer);
-		count--;
-		cv.notify_all();
-	}
-	else
-		SendPacket(buffer);
-}
-
-UOINTERFACE_API(void) SendToClient(byte *buffer)
-{
-	if (GetCurrentThreadId() != clientThread)
-	{
-		std::unique_lock<std::mutex> lck(mtx);
-		count++;
-		cv.wait(lck, []() { return ready; });
-		RecvPacket(buffer);
-		count--;
-		cv.notify_all();
-	}
-	else
-		RecvPacket(buffer);
 }

@@ -1,39 +1,26 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace PacketLogger
 {
     public static class UOInterface
     {
+        public enum UOMessage
+        {
+            ExitProcess = 0x0400, Disconnect, WindowCreated, Focus, Visibility,
+            KeyDown, ConnectionInfo, PacketLengths, PacketToServer, PacketToClient
+        };
+
+        public const string MemoryNameIn = "UOInterface_In_";
+        public const string MemoryNameOut = "UOInterface_Out_";
+
         [DllImport("UOInterface.dll", CharSet = CharSet.Unicode)]
-        public static extern void Start(string client, string assembly, string typeName, string methodName, string args);
+        public static extern int Start(string client, IntPtr hwnd);
 
-        [DllImport("UOInterface.dll")]
-        public static extern void InstallHooks(CallBacks callBacks, bool patchEncryption);
+        [DllImport("UOInterface.dll", CharSet = CharSet.Unicode)]
+        public static extern void Inject(int pid, IntPtr hwnd);
 
-        [DllImport("UOInterface.dll")]
-        public static extern void SetConnectionInfo(uint address, ushort port);
-
-        [DllImport("UOInterface.dll")]
-        public static extern uint GetPacketLength(byte packetId);
-
-        [DllImport("UOInterface.dll")]
-        public static extern void SendToClient([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)]byte[] buffer);
-
-        [DllImport("UOInterface.dll")]
-        public static extern void SendToServer([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)]byte[] buffer);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct CallBacks
-        {//you have to keep instance of this structure alive!!!
-            public dMessage OnMessage;
-            public dKeyDown OnKeyDown;
-            public dPacket OnRecv;
-            public dPacket OnSend;
-        }
-
-        public enum Message : byte { ExitProcess, Disconnect, WindowCreated, Focus, Visibility};
-        public delegate void dMessage(Message msg, uint param);
-        public delegate bool dKeyDown(uint virtualKey);
-        public delegate bool dPacket([In, Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = 1)]byte[] buffer, int len);
+        [DllImport("user32.dll")]
+        public static extern IntPtr SendMessage(IntPtr hWnd, UOMessage msg, IntPtr wParam, IntPtr lParam);
     }
 }

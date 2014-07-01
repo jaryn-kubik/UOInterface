@@ -1,82 +1,113 @@
 ﻿using System;
-using System.Runtime.InteropServices;
-using System.Threading;
+using System.IO.MemoryMappedFiles;
 using System.Windows.Forms;
 
 namespace PacketLogger
 {
     class Program
     {
+        private static IntPtr hwnd;
+        private static MemoryMappedViewAccessor mIn, mOut;
+        private static ushort[] packetLengths;
+
         static void Main()
         {
-            UOInterface.Start("C:\\UO\\Test\\client.exe", null, "PacketLogger.Program", "EntryPoint", null);
+            uownd wnd = new uownd();
+            int pid = UOInterface.Start("C:\\UO\\Test\\client.exe", wnd.Handle);
+
+            mIn = MemoryMappedFile.OpenExisting(UOInterface.MemoryNameIn + pid).CreateViewAccessor();
+            mOut = MemoryMappedFile.OpenExisting(UOInterface.MemoryNameOut + pid).CreateViewAccessor();
+            Application.Run();
         }
 
-        private static UOInterface.CallBacks c;
-        public static int EntryPoint(String args)
+        private class uownd : NativeWindow
         {
-            c = new UOInterface.CallBacks
+            public uownd() { CreateHandle(new CreateParams()); }
+            protected override void WndProc(ref Message m)
             {
-                OnMessage = onMessage,
-                OnKeyDown = onKeyDown,
-                OnSend = onSend,
-                OnRecv = onRecv
-            };
-            UOInterface.InstallHooks(c, true);
-            UOInterface.SetConnectionInfo(0x0100007F, 2593);//127.0.0.1, 2593
-            new Thread(() => AllocConsole()).Start();
-            return 0;
+                if (!Enum.IsDefined(typeof(UOInterface.UOMessage), m.Msg))
+                {
+                    base.WndProc(ref m);
+                    return;
+                }
+
+                bool result = onMessage((UOInterface.UOMessage)m.Msg, m.WParam);
+                m.Result = new IntPtr(Convert.ToInt32(result));
+            }
         }
 
-        private static void onMessage(UOInterface.Message msg, uint param)
+        private static byte[] readPacket(IntPtr wParam)
         {
-            Console.Write("Message: {0}", msg);
+            int len = wParam.ToInt32();
+            byte[] data = new byte[len];
+            mOut.ReadArray(0, data, 0, len);
+            return data;
+        }
+
+        private static bool onMessage(UOInterface.UOMessage msg, IntPtr wParam)
+        {
+            Console.Write(msg);
             switch (msg)
             {
-                case UOInterface.Message.Focus:
-                case UOInterface.Message.Visibility:
-                    Console.Write(" - {0}", param != 0);
+                case UOInterface.UOMessage.Focus:
+                case UOInterface.UOMessage.Visibility:
+                    Console.Write(" - {0}", wParam.ToInt32() != 0);
                     break;
-                case UOInterface.Message.WindowCreated:
-                    Console.Write(" - 0x{0:X8}", param);
+
+                case UOInterface.UOMessage.WindowCreated:
+                    hwnd = wParam;
+                    IntPtr ip = new IntPtr(0x0100007F);//127.0.0.1
+                    IntPtr port = new IntPtr(2593);
+                    UOInterface.SendMessage(hwnd, UOInterface.UOMessage.ConnectionInfo, ip, port);
+                    Console.Write(" - 0x{0:X8}", (uint)wParam.ToInt32());
+                    break;
+
+                case UOInterface.UOMessage.KeyDown:
+                    Console.Write(" - {0}", (Keys)(uint)wParam.ToInt32());
+                    break;
+
+                case UOInterface.UOMessage.PacketToClient:
+                    return onRecv(readPacket(wParam));
+
+                case UOInterface.UOMessage.PacketToServer:
+                    return onSend(readPacket(wParam));
+
+                case UOInterface.UOMessage.PacketLengths:
+                    int len = wParam.ToInt32() / sizeof(ushort);
+                    packetLengths = new ushort[len];
+                    mOut.ReadArray(0, packetLengths, 0, len);
+                    Console.Write(" - {0} packets", len);
                     break;
             }
             Console.WriteLine();
+            return false;
         }
 
-        private static bool onKeyDown(uint virtualKey)
+        private static bool onSend(byte[] buffer)
         {
-            Console.WriteLine("Keys: {0}", (Keys)virtualKey);
-            return false;//== do not filter
-        }
-
-        private static bool onSend(byte[] buffer, int len)
-        {
-            WritePacket(buffer, "Client -> Server");
+            WritePacket(buffer);
             if (buffer[0] == 0xAD)
-            {//duplicate sent messages - just for fun (and for testing if it really works...)
-                byte[] asdf = new byte[len];
-                buffer.CopyTo(asdf, 0);
-                UOInterface.SendToServer(asdf);
+            {//duplicate sent chat messages - just for fun (and for testing if it really works...)
+                mIn.WriteArray(0, buffer, 0, buffer.Length);
+                UOInterface.SendMessage(hwnd, UOInterface.UOMessage.PacketToServer, IntPtr.Zero, IntPtr.Zero);
             }
             return false;
         }
 
-        private static bool onRecv(byte[] buffer, int len)
+        private static bool onRecv(byte[] buffer)
         {
-            WritePacket(buffer, "Server -> Client");
+            WritePacket(buffer);
             if (buffer[0] == 0xAE)
-            {//duplicate recieved messages - just for fun (and for testing if it really works...)
-                byte[] asdf = new byte[len];
-                buffer.CopyTo(asdf, 0);
-                UOInterface.SendToClient(asdf);
+            {//duplicate recieved chat messages - just for fun (and for testing if it really works...)
+                mIn.WriteArray(0, buffer, 0, buffer.Length);
+                UOInterface.SendMessage(hwnd, UOInterface.UOMessage.PacketToClient, IntPtr.Zero, IntPtr.Zero);
             }
             return false;
         }
 
-        private static void WritePacket(byte[] buffer, string direction)
+        private static void WritePacket(byte[] buffer)
         {
-            Console.WriteLine("{0}\t {1:X2} - {2} bytes", direction, buffer[0], buffer.Length);
+            Console.WriteLine("\t\t {0:X2} - {1} bytes", buffer[0], buffer.Length);
             Console.WriteLine(" 0  1  2  3  4  5  6  7   8  9  A  B  C  D  E  F");
             Console.WriteLine("-- -- -- -- -- -- -- --  -- -- -- -- -- -- -- --");
 
@@ -93,8 +124,5 @@ namespace PacketLogger
             Console.WriteLine();
             Console.WriteLine();
         }
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool AllocConsole();
     }
 }

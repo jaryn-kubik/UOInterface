@@ -1,91 +1,88 @@
 #include "stdafx.h"
 #include "UOInterface.h"
-#include "CLRLoader.h"
 #include "ImportHooks.h"
 #include "PacketHooks.h"
 #include "Patches.h"
+#include "IPC.h"
 
-CallBacks callBacks;
-UOINTERFACE_API(void) InstallHooks(CallBacks callbacks, BOOL patchEncryption)
+DWORD WINAPI Init(LPVOID hwnd)
 {
 	try
 	{
-		callBacks = callbacks;
+		InitIPC(*(HWND*)hwnd);
 		HookImports();
 		HookPackets();
-		if (patchEncryption)
-			PatchEncryption();
-		PatchMulti();
+		PatchEncryption();
+		return EXIT_SUCCESS;
 	}
-	catch (LPCWSTR str) { MessageBoxW(nullptr, str, L"Error", MB_ICONERROR | MB_OK); }
-}
-
-DWORD WINAPI Init(LPCWSTR info)
-{
-	try
-	{
-		LPCWSTR assembly = info;
-		LPCWSTR type = assembly + wcslen(assembly) + 1;
-		LPCWSTR method = type + wcslen(type) + 1;
-		LPCWSTR args = method + wcslen(method) + 1;
-		return LoadCLR(assembly, type, method, args);
-	}
-	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error", MB_ICONERROR | MB_OK); }
+	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Init", MB_ICONERROR | MB_OK); }
 	return EXIT_FAILURE;
 }
 
-UOINTERFACE_API(void) Start(LPWSTR client, LPWSTR assembly, LPWSTR type, LPWSTR method, LPWSTR args)
+UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd)
 {
-	WCHAR empty[1] = {};
-	WCHAR callerAssembly[MAX_PATH];
-	if (assembly == nullptr)
+	try
 	{
-		GetModuleFileName(GetModuleHandle(nullptr), callerAssembly, sizeof(callerAssembly));
-		assembly = callerAssembly;
+		//create suspended process
+		PROCESS_INFORMATION pi = {};
+		STARTUPINFOW si = {};
+		si.cb = sizeof(si);
+		if (!CreateProcess(client, nullptr, nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, nullptr, &si, &pi))
+			throw L"CreateProcess";
+		Inject(pi.dwProcessId, hwnd);
+		ResumeThread(pi.hThread);
+		return pi.dwProcessId;
 	}
-	if (args == nullptr)
-		args = empty;
+	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Start", MB_ICONERROR | MB_OK); }
+	return -1;
+}
 
-	//create suspended process
-	PROCESS_INFORMATION pi = {};
-	STARTUPINFOW si = {};
-	si.cb = sizeof(si);
-	CreateProcess(client, nullptr, nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, nullptr, &si, &pi);
+UOINTERFACE_API(void) Inject(DWORD pid, HWND hwnd)
+{
+	try
+	{
+		HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, pid);
+		if (!hProcess)
+			throw L"OpenProcess";
 
-	//get UOInterface module and path, write it in remote process memory
-	HMODULE hDll;
-	GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&Start, &hDll);
-	WCHAR dllPath[MAX_PATH];
-	GetModuleFileName(hDll, dllPath, sizeof(dllPath));
-	SIZE_T pRemoveLen = 2 * max((wcslen(assembly) + wcslen(type) + wcslen(method) + wcslen(args) + 4), wcslen(dllPath));
-	LPVOID pRemote = (LPWSTR)VirtualAllocEx(pi.hProcess, nullptr, pRemoveLen, MEM_COMMIT, PAGE_READWRITE);
-	WriteProcessMemory(pi.hProcess, pRemote, dllPath, sizeof(dllPath), nullptr);
+		//get UOInterface module and path, write it in remote process memory
+		HMODULE hDll;
+		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&Start, &hDll);
+		WCHAR dllPath[1024];
+		GetModuleFileNameW(hDll, dllPath, sizeof(dllPath));
+		LPVOID pRemote = VirtualAllocEx(hProcess, nullptr, sizeof(dllPath), MEM_COMMIT, PAGE_READWRITE);
+		if (!pRemote)
+			throw L"VirtualAllocEx";
+		if (!WriteProcessMemory(hProcess, pRemote, dllPath, sizeof(dllPath), nullptr))
+			throw L"WriteProcessMemory (UOInterface.dll path)";
 
-	//load UOInterface in remote process, get its module
-	LPTHREAD_START_ROUTINE pLoadLibrary = (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(L"kernel32"), "LoadLibraryW");
-	HANDLE hThread = CreateRemoteThread(pi.hProcess, nullptr, 0, pLoadLibrary, pRemote, 0, nullptr);
-	WaitForSingleObject(hThread, INFINITE);
-	DWORD hRemote;//this module adrress in created process
-	GetExitCodeThread(hThread, &hRemote);
-	CloseHandle(hThread);
+		//load UOInterface in remote process, get its module
+		LPTHREAD_START_ROUTINE pLoadLibrary = (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(L"kernel32"), "LoadLibraryW");
+		HANDLE hThread = CreateRemoteThread(hProcess, nullptr, 0, pLoadLibrary, pRemote, 0, nullptr);
+		if (!hThread)
+			throw L"CreateRemoteThread (LoadLibrary)";
+		WaitForSingleObject(hThread, INFINITE);
+		DWORD hRemote;//this module adrress in created process
+		GetExitCodeThread(hThread, &hRemote);
+		if (!hRemote)
+			throw L"Remote LoadLibrary";
+		CloseHandle(hThread);
 
-	//write info in remove process
-	byte *pArgs = (byte*)pRemote;
-	SIZE_T written;
-	WriteProcessMemory(pi.hProcess, pArgs, assembly, (wcslen(assembly) + 1) * 2, &written);
-	WriteProcessMemory(pi.hProcess, pArgs += written, type, (wcslen(type) + 1) * 2, &written);
-	WriteProcessMemory(pi.hProcess, pArgs += written, method, (wcslen(method) + 1) * 2, &written);
-	WriteProcessMemory(pi.hProcess, pArgs += written, args, (wcslen(args) + 1) * 2, &written);
+		//call Init
+		if (!WriteProcessMemory(hProcess, pRemote, &hwnd, 4, nullptr))
+			throw L"WriteProcessMemory (hwnd)";
+		hThread = CreateRemoteThread(hProcess, nullptr, 0, (LPTHREAD_START_ROUTINE)(hRemote + (DWORD)Init - (DWORD)hDll), pRemote, 0, nullptr);
+		if (!hThread)
+			throw L"CreateRemoteThread (Init)";
+		WaitForSingleObject(hThread, INFINITE);
+		GetExitCodeThread(hThread, &hRemote);
+		CloseHandle(hThread);
 
-	//call Init
-	hThread = CreateRemoteThread(pi.hProcess, nullptr, 0, (LPTHREAD_START_ROUTINE)(hRemote + (DWORD)Init - (DWORD)hDll), pRemote, 0, nullptr);
-	WaitForSingleObject(hThread, INFINITE);
-	GetExitCodeThread(hThread, &hRemote);
-	CloseHandle(hThread);
-
-	//free memory, resume process
-	VirtualFreeEx(pi.hProcess, pRemote, pRemoveLen, MEM_RELEASE);
-	ResumeThread(pi.hThread);
+		//free memory
+		VirtualFreeEx(hProcess, pRemote, sizeof(dllPath), MEM_RELEASE);
+		CloseHandle(hProcess);
+	}
+	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Attach", MB_ICONERROR | MB_OK); }
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
