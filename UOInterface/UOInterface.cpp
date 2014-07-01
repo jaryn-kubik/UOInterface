@@ -2,7 +2,6 @@
 #include "UOInterface.h"
 #include "ImportHooks.h"
 #include "PacketHooks.h"
-#include "Patches.h"
 #include "IPC.h"
 
 DWORD WINAPI Init(LPVOID hwnd)
@@ -12,7 +11,6 @@ DWORD WINAPI Init(LPVOID hwnd)
 		InitIPC(*(HWND*)hwnd);
 		HookImports();
 		HookPackets();
-		PatchEncryption();
 		return EXIT_SUCCESS;
 	}
 	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Init", MB_ICONERROR | MB_OK); }

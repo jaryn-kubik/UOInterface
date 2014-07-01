@@ -25,14 +25,13 @@ namespace PacketLogger
             public uownd() { CreateHandle(new CreateParams()); }
             protected override void WndProc(ref Message m)
             {
-                if (!Enum.IsDefined(typeof(UOInterface.UOMessage), m.Msg))
+                if (Enum.IsDefined(typeof(UOInterface.UOMessage), m.Msg))
                 {
-                    base.WndProc(ref m);
-                    return;
+                    bool result = onMessage((UOInterface.UOMessage)m.Msg, m.WParam);
+                    m.Result = new IntPtr(Convert.ToInt32(result));
                 }
-
-                bool result = onMessage((UOInterface.UOMessage)m.Msg, m.WParam);
-                m.Result = new IntPtr(Convert.ToInt32(result));
+                else
+                    base.WndProc(ref m);
             }
         }
 
@@ -49,17 +48,25 @@ namespace PacketLogger
             Console.Write(msg);
             switch (msg)
             {
-                case UOInterface.UOMessage.Focus:
-                case UOInterface.UOMessage.Visibility:
-                    Console.Write(" - {0}", wParam.ToInt32() != 0);
-                    break;
-
-                case UOInterface.UOMessage.WindowCreated:
+                case UOInterface.UOMessage.Init:
                     hwnd = wParam;
                     IntPtr ip = new IntPtr(0x0100007F);//127.0.0.1
                     IntPtr port = new IntPtr(2593);
                     UOInterface.SendMessage(hwnd, UOInterface.UOMessage.ConnectionInfo, ip, port);
+                    UOInterface.SendMessage(hwnd, UOInterface.UOMessage.Patch, new IntPtr(1), new IntPtr(1));
                     Console.Write(" - 0x{0:X8}", (uint)wParam.ToInt32());
+                    break;
+
+                case UOInterface.UOMessage.PacketLengths:
+                    int len = wParam.ToInt32() / sizeof(ushort);
+                    packetLengths = new ushort[len];
+                    mOut.ReadArray(0, packetLengths, 0, len);
+                    Console.Write(" - {0} packets", len);
+                    break;
+
+                case UOInterface.UOMessage.Focus:
+                case UOInterface.UOMessage.Visibility:
+                    Console.Write(" - {0}", wParam.ToInt32() != 0);
                     break;
 
                 case UOInterface.UOMessage.KeyDown:
@@ -71,13 +78,6 @@ namespace PacketLogger
 
                 case UOInterface.UOMessage.PacketToServer:
                     return onSend(readPacket(wParam));
-
-                case UOInterface.UOMessage.PacketLengths:
-                    int len = wParam.ToInt32() / sizeof(ushort);
-                    packetLengths = new ushort[len];
-                    mOut.ReadArray(0, packetLengths, 0, len);
-                    Console.Write(" - {0} packets", len);
-                    break;
             }
             Console.WriteLine();
             return false;
@@ -89,7 +89,7 @@ namespace PacketLogger
             if (buffer[0] == 0xAD)
             {//duplicate sent chat messages - just for fun (and for testing if it really works...)
                 mIn.WriteArray(0, buffer, 0, buffer.Length);
-                UOInterface.SendMessage(hwnd, UOInterface.UOMessage.PacketToServer, IntPtr.Zero, IntPtr.Zero);
+                UOInterface.SendMessage(hwnd, UOInterface.UOMessage.PacketToServer);
             }
             return false;
         }
@@ -100,7 +100,7 @@ namespace PacketLogger
             if (buffer[0] == 0xAE)
             {//duplicate recieved chat messages - just for fun (and for testing if it really works...)
                 mIn.WriteArray(0, buffer, 0, buffer.Length);
-                UOInterface.SendMessage(hwnd, UOInterface.UOMessage.PacketToClient, IntPtr.Zero, IntPtr.Zero);
+                UOInterface.SendMessage(hwnd, UOInterface.UOMessage.PacketToClient);
             }
             return false;
         }

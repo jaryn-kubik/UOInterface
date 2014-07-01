@@ -7,8 +7,8 @@ namespace PacketLogger
     {
         public enum UOMessage
         {
-            ExitProcess = 0x0400, Disconnect, WindowCreated, Focus, Visibility,
-            KeyDown, ConnectionInfo, PacketLengths, PacketToServer, PacketToClient
+            Init = 0x0400, PacketLengths, Focus, Visibility, Disconnect, ExitProcess,
+            KeyDown, PacketToServer, PacketToClient, ConnectionInfo, Patch
         };
 
         public const string MemoryNameIn = "UOInterface_In_";
@@ -21,6 +21,6 @@ namespace PacketLogger
         public static extern void Inject(int pid, IntPtr hwnd);
 
         [DllImport("user32.dll")]
-        public static extern IntPtr SendMessage(IntPtr hWnd, UOMessage msg, IntPtr wParam, IntPtr lParam);
+        public static extern IntPtr SendMessage(IntPtr hWnd, UOMessage msg, IntPtr wParam = default(IntPtr), IntPtr lParam = default(IntPtr));
     }
 }

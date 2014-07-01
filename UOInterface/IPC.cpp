@@ -2,6 +2,7 @@
 #include "UOInterface.h"
 #include "PacketHooks.h"
 #include "ImportHooks.h"
+#include "Patches.h"
 #include <mutex>
 
 byte *CreateSharedMemory(LPCWSTR memoryName)
@@ -59,6 +60,12 @@ LRESULT RecvIPCMessage(UOMessage msg, WPARAM wParam, LPARAM lParam)
 		break;
 	case UOMessage::ConnectionInfo:
 		SetConnectionInfo(wParam, lParam);
+		break;
+	case UOMessage::Patch:
+		if (wParam)
+			PatchEncryption();
+		if (lParam)
+			PatchMulti();
 		break;
 	default:
 		break;

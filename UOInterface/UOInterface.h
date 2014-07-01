@@ -12,8 +12,8 @@ const LPCWSTR BufferOutName = L"UOInterface_Out_%d";
 
 enum struct UOMessage
 {
-	ExitProcess = WM_USER, Disconnect, WindowCreated, Focus, Visibility,
-	KeyDown, ConnectionInfo, PacketLengths, PacketToServer, PacketToClient
+	Init = WM_USER, PacketLengths, Focus, Visibility, Disconnect, ExitProcess,
+	KeyDown, PacketToServer, PacketToClient, ConnectionInfo, Patch
 };
 
 UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd);

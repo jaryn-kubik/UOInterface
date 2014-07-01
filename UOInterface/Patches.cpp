@@ -89,7 +89,94 @@ void PatchEncryption()
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
+void SingleCheck()
+{
+	//1.x - 7.x
+	byte sig[] = { 0x85, 0xC0, 0x74, 0x15, 0x6A, 0x40 };
+
+	byte *offset;
+	if (FindCode(sig, sizeof(sig), &offset))
+		SetByte(offset + 2, 0xEB);
+}
+
+void DoubleCheck()
+{
+	//1.x - 3.x
+	byte sig[] = { 0x3D, 0xB7, 0x00, 0x00, 0x00, 0x75, 0x1B, 0x8B, 0x0D };
+
+	byte *offset;
+	if (FindCode(sig, sizeof(sig), &offset))
+	{
+		SetByte(offset + 0x37, 0xEB);
+		SetByte(offset - 8, 0xEB);
+	}
+}
+
+bool TripleCheck()
+{
+	//4.x - 5.x
+	byte sig1[] = { 0x3B, 0xC3, 0x89, 0x44, 0x24, 0x10, 0x75, 0x12 };
+	//6.x - 7.x
+	byte sig2[] = { 0x3B, 0xC3, 0x89, 0x44, 0x24, 0x08 };
+
+	bool result;
+	byte *offset;
+	if (result = FindCode(sig1, sizeof(sig1), &offset))
+	{
+		SetByte(offset + 6, 0xEB);
+		SetByte(offset + 0x25, 0xEB);
+		SetByte(offset + 0x4B, 0xEB);
+	}
+	else if (result = FindCode(sig2, sizeof(sig2), &offset))
+	{
+		SetByte(offset + 6, 0xEB);
+		SetByte(offset + 0x2D, 0xEB);
+		SetByte(offset + 0x5F, 0xEB);
+	}
+	return result;
+}
+
+void ErrorCheck()
+{
+	//6.x - 7.x
+	byte sig1[] = { 0x85, 0xC0, 0x5F, 0x5E, 0x75, 0x2F };
+	//4.x - 5.x
+	byte sig2[] = { 0x85, 0xC0, 0x75, 0x2F, 0xBF };
+
+	byte *offset;
+	if (FindCode(sig1, sizeof(sig1), &offset))
+	{
+		SetByte(offset + 4, 0x90);
+		SetByte(offset + 5, 0x90);
+	}
+	else if (FindCode(sig2, sizeof(sig2), &offset))
+	{
+		SetByte(offset, 0x66);
+		SetByte(offset + 1, 0x33);
+		SetByte(offset + 2, 0xC0);
+		SetByte(offset + 3, 0x90);
+	}
+}
+
+bool SevenSingleCheck()
+{
+	unsigned char sig[] = { 0x83, 0xC4, 0x04, 0x33, 0xED, 0x55, 0x50, 0xFF, 0x15 };
+	byte *offset;
+	if (FindCode(sig, sizeof(sig), &offset))
+	{
+		SetByte(offset + 0xD, 0x39);
+		return true;
+	}
+	return false;
+}
+
 void PatchMulti()
 {
-
+	if (!SevenSingleCheck())
+	{
+		ErrorCheck();
+		SingleCheck();
+		if (!TripleCheck())
+			DoubleCheck();
+	}
 }

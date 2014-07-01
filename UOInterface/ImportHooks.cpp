@@ -111,12 +111,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_CREATE:
-		SendIPCMessage(UOMessage::WindowCreated, (UINT)hwnd);
+		SendIPCMessage(UOMessage::Init, (UINT)hwnd);
 		SendIPCData(UOMessage::PacketLengths, &packetTable, sizeof(packetTable));
 		break;
 	}
 
-	if (msg >= (int)UOMessage::ExitProcess && msg <= (int)UOMessage::PacketToClient)
+	if (msg >= (int)UOMessage::Init && msg <= (int)UOMessage::Patch)
 		return RecvIPCMessage((UOMessage)msg, wParam, lParam);
 	return oldWndProc(hwnd, msg, wParam, lParam);
 }
