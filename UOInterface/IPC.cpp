@@ -1,38 +1,35 @@
 #include "stdafx.h"
+#include "IPC.h"
 #include "UOInterface.h"
 #include "PacketHooks.h"
 #include "ImportHooks.h"
 #include "Patches.h"
-#include <mutex>
 #include "Macros.h"
+#include <mutex>
 
-byte *CreateSharedMemory(LPCWSTR memoryName)
+HWND hwnd;
+SharedMemory *sharedMemory;
+std::mutex mtx;
+HANDLE InitIPC(HWND _hwnd)
 {
-	DWORD pId = GetCurrentProcessId();
-	WCHAR name[128];
-	swprintf_s(name, memoryName, pId);
-
-	HANDLE mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, BufferSize, name);
+	HANDLE mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(SharedMemory), nullptr);
 	if (!mapping)
 		throw L"CreateFileMapping";
 
-	byte *memory = (byte*)MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-	if (!memory)
+	sharedMemory = (SharedMemory*)MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+	if (!sharedMemory)
 		throw L"MapViewOfFile";
-	return memory;
+
+	DWORD pId;
+	GetWindowThreadProcessId(hwnd = _hwnd, &pId);
+	HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE, FALSE, pId);
+
+	if (!DuplicateHandle(GetCurrentProcess(), mapping, hProcess, &mapping, 0, FALSE, DUPLICATE_SAME_ACCESS))
+		throw L"DuplicateHandle";
+	return mapping;
 }
 
-HWND hwnd;
-byte *memoryIn, *memoryOut;
-std::mutex mtx;
-void InitIPC(HWND hWND)
-{
-	hwnd = hWND;
-	memoryIn = CreateSharedMemory(BufferInName);
-	memoryOut = CreateSharedMemory(BufferOutName);
-}
-
-BOOL SendIPCMessage(UOMessage msg, UINT data = 0)
+BOOL SendIPCMessage(UOMessage msg, UINT data)
 {
 	mtx.lock();
 	BOOL result = SendMessage(hwnd, (int)msg, data, 0);
@@ -43,7 +40,7 @@ BOOL SendIPCMessage(UOMessage msg, UINT data = 0)
 BOOL SendIPCData(UOMessage msg, LPVOID data, UINT len)
 {
 	mtx.lock();
-	memcpy(memoryOut, data, len);
+	memcpy(sharedMemory->bufferOut, data, len);
 	BOOL result = SendMessage(hwnd, (int)msg, len, 0);
 	mtx.unlock();
 	return result;
@@ -54,10 +51,10 @@ LRESULT RecvIPCMessage(UOMessage msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case UOMessage::PacketToClient:
-		RecvPacket(memoryIn);
+		RecvPacket(sharedMemory->bufferIn);
 		break;
 	case UOMessage::PacketToServer:
-		SendPacket(memoryIn);
+		SendPacket(sharedMemory->bufferIn);
 		break;
 	case UOMessage::ConnectionInfo:
 		SetConnectionInfo(wParam, LOWORD(lParam));

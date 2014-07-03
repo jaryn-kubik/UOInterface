@@ -201,8 +201,7 @@ bool HookRecv()
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
 struct PacketInfo{ UINT id, unknown, len; };
-SHORT packetTable[0x100];
-bool GetPacketTable()
+bool FindPacketTable()
 {
 	unsigned char sig[] =
 	{
@@ -217,14 +216,14 @@ bool GetPacketTable()
 
 	PacketInfo *table = ((PacketInfo*)offset) - 1;
 	for (UINT unknown = table->unknown; table->unknown == unknown; table++)
-		packetTable[table->id] = table->len;
+		sharedMemory->packetTable[table->id] = table->len;
 
 	return true;
 }
 
 USHORT GetPacketLength(byte* buffer)
 {
-	USHORT len = packetTable[buffer[0]];
+	USHORT len = sharedMemory->packetTable[buffer[0]];
 	if (len == 0x8000)
 		len = *((USHORT *)(buffer + 1));
 	return len;
@@ -238,6 +237,6 @@ void HookPackets()
 		throw L"PacketHooks: HookSend";
 	if (!HookRecv())
 		throw L"PacketHooks: HookRecv";
-	if (!GetPacketTable())
-		throw L"PacketHooks: GetPacketTable";
+	if (!FindPacketTable())
+		throw L"PacketHooks: FindPacketTable";
 }

@@ -5,21 +5,28 @@
 #include "IPC.h"
 #include "Macros.h"
 
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+{
+	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
+		DisableThreadLibraryCalls(hModule);
+	return TRUE;
+}
+
 DWORD WINAPI Init(LPVOID hwnd)
 {
 	try
 	{
-		InitIPC(*(HWND*)hwnd);
+		HANDLE handle = InitIPC(*(HWND*)hwnd);
 		HookImports();
 		HookPackets();
 		InitMacros();
-		return EXIT_SUCCESS;
+		return (DWORD)handle;
 	}
 	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Init", MB_ICONERROR | MB_OK); }
 	return EXIT_FAILURE;
 }
 
-UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd)
+UOINTERFACE_API(void) Start(LPWSTR client, HWND hwnd)
 {
 	try
 	{
@@ -31,10 +38,8 @@ UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd)
 			throw L"CreateProcess";
 		Inject(pi.dwProcessId, hwnd);
 		ResumeThread(pi.hThread);
-		return pi.dwProcessId;
 	}
 	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Start", MB_ICONERROR | MB_OK); }
-	return -1;
 }
 
 UOINTERFACE_API(void) Inject(DWORD pid, HWND hwnd)
@@ -81,16 +86,20 @@ UOINTERFACE_API(void) Inject(DWORD pid, HWND hwnd)
 		//free memory
 		VirtualFreeEx(hProcess, pRemote, sizeof(dllPath), MEM_RELEASE);
 		CloseHandle(hProcess);
+
+		sharedMemory = (SharedMemory*)MapViewOfFile((HANDLE)hRemote, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		if (!sharedMemory)
+			throw L"MapViewOfFile";
 	}
 	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Attach", MB_ICONERROR | MB_OK); }
 }
-
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+UOINTERFACE_API(byte*) GetInBuffer() { return sharedMemory->bufferOut; }
+UOINTERFACE_API(byte*) GetOutBuffer() { return sharedMemory->bufferIn; }
+UOINTERFACE_API(short*) GetPacketTable() { return sharedMemory->packetTable; }
+UOINTERFACE_API(void) SendIPCMessage(UOMessage msg, UINT wParam, UINT lParam)
 {
-	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
-		DisableThreadLibraryCalls(hModule);
-	return TRUE;
+	SendMessage(sharedMemory->hwnd, (UINT)msg, wParam, lParam);
 }
-//---------------------------------------------------------------------------//
-//---------------------------------------------------------------------------//
-//---------------------------------------------------------------------------//

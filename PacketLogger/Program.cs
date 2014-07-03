@@ -1,22 +1,21 @@
 ﻿using System;
-using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace PacketLogger
 {
     class Program
     {
-        private static IntPtr hwnd;
-        private static MemoryMappedViewAccessor mIn, mOut;
-        private static ushort[] packetLengths;
+        private static IntPtr bufferIn, bufferOut;
+        private static readonly short[] packetTable = new short[0x100];
 
         static void Main()
         {
             uownd wnd = new uownd();
-            int pid = UOInterface.Start("C:\\UO\\Test\\client.exe", wnd.Handle);
-
-            mIn = MemoryMappedFile.OpenExisting(UOInterface.MemoryNameIn + pid).CreateViewAccessor();
-            mOut = MemoryMappedFile.OpenExisting(UOInterface.MemoryNameOut + pid).CreateViewAccessor();
+            UOInterface.Start("C:\\UO\\Test\\client.exe", wnd.Handle);
+            bufferIn = UOInterface.GetInBuffer();
+            bufferOut = UOInterface.GetOutBuffer();
+            Marshal.Copy(UOInterface.GetPacketTable(), packetTable, 0, packetTable.Length);
             Application.Run();
         }
 
@@ -39,7 +38,7 @@ namespace PacketLogger
         {
             int len = wParam.ToInt32();
             byte[] data = new byte[len];
-            mOut.ReadArray(0, data, 0, len);
+            Marshal.Copy(bufferIn, data, 0, len);
             return data;
         }
 
@@ -49,19 +48,8 @@ namespace PacketLogger
             switch (msg)
             {
                 case UOMessage.Init:
-                    hwnd = wParam;
-                    IntPtr ip = new IntPtr(0x0100007F);//127.0.0.1
-                    IntPtr port = new IntPtr(2593);
-                    UOInterface.SendMessage(hwnd, UOMessage.ConnectionInfo, ip, port);
-                    UOInterface.SendMessage(hwnd, UOMessage.Patch, new IntPtr(1), new IntPtr(1));
-                    Console.Write(" - 0x{0:X8}", (uint)wParam.ToInt32());
-                    break;
-
-                case UOMessage.PacketLengths:
-                    int len = wParam.ToInt32() / sizeof(ushort);
-                    packetLengths = new ushort[len];
-                    mOut.ReadArray(0, packetLengths, 0, len);
-                    Console.Write(" - {0} packets", len);
+                    UOInterface.SendIPCMessage(UOMessage.ConnectionInfo, 0x0100007F, 2593);//127.0.0.1, 2593
+                    UOInterface.SendIPCMessage(UOMessage.Patch, 1, 1);
                     break;
 
                 case UOMessage.Focus:
@@ -88,8 +76,8 @@ namespace PacketLogger
             WritePacket(buffer);
             if (buffer[0] == 0xAD)
             {//duplicate sent chat messages - just for fun (and for testing if it really works...)
-                mIn.WriteArray(0, buffer, 0, buffer.Length);
-                UOInterface.SendMessage(hwnd, UOMessage.PacketToServer);
+                Marshal.Copy(buffer, 0, bufferOut, buffer.Length);
+                UOInterface.SendIPCMessage(UOMessage.PacketToServer);
             }
             return false;
         }
@@ -99,8 +87,8 @@ namespace PacketLogger
             WritePacket(buffer);
             if (buffer[0] == 0xAE)
             {//duplicate recieved chat messages - just for fun (and for testing if it really works...)
-                mIn.WriteArray(0, buffer, 0, buffer.Length);
-                UOInterface.SendMessage(hwnd, UOMessage.PacketToClient);
+                Marshal.Copy(buffer, 0, bufferOut, buffer.Length);
+                UOInterface.SendIPCMessage(UOMessage.PacketToClient);
             }
             return false;
         }

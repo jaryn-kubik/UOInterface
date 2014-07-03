@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "WinSock2.h"
-#include "UOInterface.h"
 #include "PacketHooks.h"
 #include "Utils.h"
 #include "IPC.h"
@@ -111,8 +110,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_CREATE:
-		SendIPCMessage(UOMessage::Init, (UINT)hwnd);
-		SendIPCData(UOMessage::PacketLengths, &packetTable, sizeof(packetTable));
+		sharedMemory->hwnd = hwnd;
+		SendIPCMessage(UOMessage::Init);
 		break;
 	}
 
