@@ -3,14 +3,15 @@ using System.Runtime.InteropServices;
 
 namespace PacketLogger
 {
+    public enum UOMessage
+    {
+        Init = 0x0400, PacketLengths, Focus, Visibility, Disconnect, ExitProcess,
+        KeyDown, PacketToClient, PacketToServer,
+        ConnectionInfo, Pathfinding, Patch
+    }
+
     public static class UOInterface
     {
-        public enum UOMessage
-        {
-            Init = 0x0400, PacketLengths, Focus, Visibility, Disconnect, ExitProcess,
-            KeyDown, PacketToServer, PacketToClient, ConnectionInfo, Patch
-        };
-
         public const string MemoryNameIn = "UOInterface_In_";
         public const string MemoryNameOut = "UOInterface_Out_";
 

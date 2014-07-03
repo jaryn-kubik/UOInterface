@@ -116,7 +116,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 
-	if (msg >= (int)UOMessage::Init && msg <= (int)UOMessage::Patch)
+	if (msg > (int)UOMessage::KeyDown && msg <= (int)UOMessage::Patch)
 		return RecvIPCMessage((UOMessage)msg, wParam, lParam);
 	return oldWndProc(hwnd, msg, wParam, lParam);
 }

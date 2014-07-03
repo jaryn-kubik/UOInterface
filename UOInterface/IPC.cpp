@@ -4,6 +4,7 @@
 #include "ImportHooks.h"
 #include "Patches.h"
 #include <mutex>
+#include "Macros.h"
 
 byte *CreateSharedMemory(LPCWSTR memoryName)
 {
@@ -52,14 +53,17 @@ LRESULT RecvIPCMessage(UOMessage msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
-	case UOMessage::PacketToServer:
-		SendPacket(memoryIn);
-		break;
 	case UOMessage::PacketToClient:
 		RecvPacket(memoryIn);
 		break;
+	case UOMessage::PacketToServer:
+		SendPacket(memoryIn);
+		break;
 	case UOMessage::ConnectionInfo:
-		SetConnectionInfo(wParam, lParam);
+		SetConnectionInfo(wParam, LOWORD(lParam));
+		break;
+	case UOMessage::Pathfinding:
+		Pathfind(HIWORD(wParam), LOWORD(wParam), LOWORD(lParam));
 		break;
 	case UOMessage::Patch:
 		if (wParam)

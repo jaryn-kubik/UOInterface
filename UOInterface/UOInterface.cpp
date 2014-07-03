@@ -3,6 +3,7 @@
 #include "ImportHooks.h"
 #include "PacketHooks.h"
 #include "IPC.h"
+#include "Macros.h"
 
 DWORD WINAPI Init(LPVOID hwnd)
 {
@@ -11,6 +12,7 @@ DWORD WINAPI Init(LPVOID hwnd)
 		InitIPC(*(HWND*)hwnd);
 		HookImports();
 		HookPackets();
+		InitMacros();
 		return EXIT_SUCCESS;
 	}
 	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Init", MB_ICONERROR | MB_OK); }
@@ -89,3 +91,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		DisableThreadLibraryCalls(hModule);
 	return TRUE;
 }
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//

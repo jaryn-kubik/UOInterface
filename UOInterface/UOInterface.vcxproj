@@ -78,6 +78,7 @@
   <ItemGroup>
     <ClInclude Include="ImportHooks.h" />
     <ClInclude Include="IPC.h" />
+    <ClInclude Include="Macros.h" />
     <ClInclude Include="PacketHooks.h" />
     <ClInclude Include="Patches.h" />
     <ClInclude Include="stdafx.h" />
@@ -88,6 +89,7 @@
   <ItemGroup>
     <ClCompile Include="ImportHooks.cpp" />
     <ClCompile Include="IPC.cpp" />
+    <ClCompile Include="Macros.cpp" />
     <ClCompile Include="PacketHooks.cpp" />
     <ClCompile Include="Patches.cpp" />
     <ClCompile Include="stdafx.cpp">

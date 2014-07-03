@@ -95,7 +95,7 @@ bool HookSend()
 		sendType = 1;
 		return true;
 	}
-	else if (FindCode(sig2, sizeof(sig2), &offset))
+	if (FindCode(sig2, sizeof(sig2), &offset))
 	{
 		sendFunc = CreateJMP(offset - 0x0F, &SendHook, 6);
 		sendType = 2;
@@ -216,7 +216,6 @@ bool GetPacketTable()
 		return false;
 
 	PacketInfo *table = ((PacketInfo*)offset) - 1;
-	UINT unknown = table->unknown;
 	for (UINT unknown = table->unknown; table->unknown == unknown; table++)
 		packetTable[table->id] = table->len;
 
