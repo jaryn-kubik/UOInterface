@@ -34,11 +34,12 @@ namespace UOInterface
         public static event EventHandler<KeyEventArgs> KeyDown;
         public static event EventHandler<PacketEventArgs> PacketToClient, PacketToServer;
 
-        private static IntPtr bufferIn, bufferOut;
-        private static readonly short[] packetTable = new short[0x100];
+        private static IntPtr bufferOut;
+        private static unsafe byte* bufferIn;
+        private static unsafe short* packetTable;
         private static readonly object packetSync = new object();
 
-        public static void Start(string client)
+        public static unsafe void Start(string client)
         {
             IntPtr handle = IntPtr.Zero;
             ManualResetEvent ready = new ManualResetEvent(false);
@@ -52,13 +53,22 @@ namespace UOInterface
 
             Start(client, handle);
             bufferIn = GetInBuffer();
-            bufferOut = GetOutBuffer();
-            Marshal.Copy(GetPacketTable(), packetTable, 0, packetTable.Length);
+            bufferOut = new IntPtr(GetOutBuffer());
+            packetTable = GetPacketTable();
         }
 
-        public static short GetPacketLength(byte id) { return packetTable[id]; }
+        public static unsafe short GetPacketLength(byte id)
+        {
+            short len = packetTable[id];
+            if (len == 0)
+                throw new ArgumentException("Packet doesn't exist.", "id");
+            return packetTable[id];
+        }
+
         public static void Pathfind(ushort x, ushort y, ushort z)
-        { SendIPCMessage(UOMessage.Pathfinding, (uint)(x << 16 | y), z); }
+        {
+            SendIPCMessage(UOMessage.Pathfinding, (uint)(x << 16 | y), z);
+        }
 
         public static void SendToClient(byte[] buffer)
         {
@@ -78,7 +88,7 @@ namespace UOInterface
             }
         }
 
-        private static bool? OnMessage(UOMessage msg, int wParam)
+        private static unsafe bool? OnMessage(UOMessage msg, int wParam)
         {
             switch (msg)
             {
@@ -147,13 +157,13 @@ namespace UOInterface
         private static extern void Start(string client, IntPtr hwnd);
 
         [DllImport("UOInterface.dll")]
-        private static extern IntPtr GetInBuffer();
+        private static extern unsafe byte* GetInBuffer();
 
         [DllImport("UOInterface.dll")]
-        private static extern IntPtr GetOutBuffer();
+        private static extern unsafe byte* GetOutBuffer();
 
         [DllImport("UOInterface.dll")]
-        private static extern IntPtr GetPacketTable();
+        private static extern unsafe short* GetPacketTable();
 
         [DllImport("UOInterface.dll")]
         private static extern void SendIPCMessage(UOMessage msg, uint wParam = 0, uint lParam = 0);
@@ -169,18 +179,12 @@ namespace UOInterface
         #endregion
     }
 
-    #region EventArgs
     public class PacketEventArgs : EventArgs
     {
-        public PacketEventArgs(IntPtr data, int len)
-        {
-            Data = data;
-            Length = len;
-        }
+        public unsafe PacketEventArgs(byte* data, int len)
+        { Packet = new Packet(data, len); }
 
-        public IntPtr Data { get; private set; }
-        public int Length { get; private set; }
+        public Packet Packet { get; private set; }
         public bool Filter { get; set; }
     }
-    #endregion
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using UOInterface;
 
 namespace PacketLogger
@@ -29,40 +28,37 @@ namespace PacketLogger
         private static void Client_PacketToClient(object sender, PacketEventArgs e)
         {
             Console.Write("PacketToClient");
-            WritePacket(e.Data, e.Length);
-            if (Marshal.ReadByte(e.Data) == 0xAE)
+            WritePacket(e.Packet);
+            if (e.Packet.ID == 0xAE)
             {//duplicate recieved chat messages - just for fun (and for testing if it really works...)
-                byte[] data = new byte[e.Length];
-                Marshal.Copy(e.Data, data, 0, e.Length);
-                Client.SendToClient(data);
+                Client.SendToClient(e.Packet.ToArray());
             }
         }
 
         private static void Client_PacketToServer(object sender, PacketEventArgs e)
         {
             Console.Write("PacketToServer");
-            WritePacket(e.Data, e.Length);
-            if (Marshal.ReadByte(e.Data) == 0xAD)
+            WritePacket(e.Packet);
+            if (e.Packet.ID == 0xAD)
             {//duplicate sent chat messages - just for fun (and for testing if it really works...)
-                byte[] data = new byte[e.Length];
-                Marshal.Copy(e.Data, data, 0, e.Length);
-                Client.SendToServer(data);
+                Client.SendToServer(e.Packet.ToArray());
             }
         }
 
-        private static void WritePacket(IntPtr data, int len)
+        private static void WritePacket(Packet packet)
         {
-            Console.WriteLine("\t\t {0:X2} - {1} bytes", Marshal.ReadByte(data), len);
+            Console.WriteLine("\t\t {0:X2} - {1} bytes", packet.ID, packet.Length);
             Console.WriteLine(" 0  1  2  3  4  5  6  7   8  9  A  B  C  D  E  F");
             Console.WriteLine("-- -- -- -- -- -- -- --  -- -- -- -- -- -- -- --");
 
-            for (int i = 0; i < len; i++)
+            packet.Seek(0);
+            for (int i = 0; i < packet.Length; i++)
             {
                 if (i % 16 == 0 && i != 0)
                     Console.WriteLine();
                 if (i % 8 == 0 && i % 16 != 0)
                     Console.Write(" ");
-                Console.Write(Marshal.ReadByte(data, i).ToString("X2"));
+                Console.Write(packet.ReadByte().ToString("X2"));
                 Console.Write(" ");
             }
 
