@@ -115,7 +115,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 
-	if (msg > (int)UOMessage::KeyDown && msg <= (int)UOMessage::Patch)
+	if (msg >= (int)UOMessage::First && msg <= (int)UOMessage::Last)
 		return RecvIPCMessage((UOMessage)msg, wParam, lParam);
 	return oldWndProc(hwnd, msg, wParam, lParam);
 }
@@ -174,7 +174,7 @@ HANDLE WINAPI Hook_CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD 
 //---------------------------------------------------------------------------//
 void WINAPI Hook_ExitProcess(UINT uExitCode)
 {
-	SendIPCMessage(UOMessage::ExitProcess);
+	SendIPCMessage(UOMessage::Closing);
 	ExitProcess(uExitCode);
 }
 
@@ -202,20 +202,22 @@ void SetConnectionInfo(UINT address, USHORT port)
 	connect_port = port;
 }
 
-int WINAPI Hook_connect(SOCKET s, const sockaddr *name, int namelen)
+int WINAPI Hook_connect(SOCKET s, sockaddr_in* inaddr, int namelen)
 {
-	if (connect_address != 0 && connect_port != 0)
-	{
-		sockaddr_in* inaddr = (sockaddr_in*)name;
+	if (connect_address)
 		inaddr->sin_addr.s_addr = connect_address;
+
+	if (connect_port)
 		inaddr->sin_port = ntohs(connect_port);
-	}
-	return connect(s, name, namelen);
+
+	int result = connect(s, (sockaddr*)inaddr, namelen);
+	SendIPCMessage(UOMessage::Connected);
+	return result;
 }
 
 int WINAPI Hook_closesocket(SOCKET s)
 {
-	SendIPCMessage(UOMessage::Disconnect);
+	SendIPCMessage(UOMessage::Disconnecting);
 	return closesocket(s);
 }
 //---------------------------------------------------------------------------//

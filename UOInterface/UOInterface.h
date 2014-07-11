@@ -8,9 +8,11 @@
 
 enum struct UOMessage
 {
-	Init = WM_USER, Focus, Visibility, Disconnect, ExitProcess,
+	First = WM_USER,
+	Init = First, Connected, Disconnecting, Closing, Focus, Visibility,
 	KeyDown, PacketToClient, PacketToServer,
-	ConnectionInfo, Pathfinding, Patch
+	ConnectionInfo, Pathfinding, Patch,
+	Last = Patch
 };
 
 UOINTERFACE_API(void) Start(LPWSTR client, HWND hwnd);
