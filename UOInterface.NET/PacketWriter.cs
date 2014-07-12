@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 
 namespace UOInterface
 {
@@ -79,33 +78,43 @@ namespace UOInterface
         public void WriteStringAscii(string value)
         {
             EnsureSize(value.Length + 1);
-            Encoding.ASCII.GetBytes(value, 0, value.Length, data, Position);
-            Position += value.Length + 1;
+            foreach (char c in value)
+                data[Position++] = (byte)c;
+            Position++;
         }
 
-        public void WriteStringAscii(string value, int lenght)
+        public void WriteStringAscii(string value, int length)
         {
-            if (value.Length > lenght)
-                throw new ArgumentOutOfRangeException("lenght");
-            EnsureSize(lenght);
-            Encoding.ASCII.GetBytes(value, 0, value.Length, data, Position);
-            Position += lenght;
+            if (value.Length > length)
+                throw new ArgumentOutOfRangeException("value");
+            EnsureSize(length);
+            foreach (char c in value)
+                data[Position++] = (byte)c;
+            Position += length - value.Length;
         }
 
-        /*public void WriteStringUnicode(string value)
+        public void WriteStringUnicode(string value)
         {
-            EnsureSize(value.Length * 2 + 2);
-            Encoding.BigEndianUnicode.GetBytes(value, 0, value.Length, data, Position);
-            Position += value.Length * 2 + 2;
+            EnsureSize((value.Length + 1) * 2);
+            foreach (char c in value)
+            {
+                data[Position++] = (byte)(c >> 8);
+                data[Position++] = (byte)(c);
+            }
+            Position += 2;
         }
 
-        public void WriteStringUnicode(string value, int lenght)
+        public void WriteStringUnicode(string value, int length)
         {
-            if (value.Length > lenght)
-                throw new ArgumentOutOfRangeException("lenght");
-            EnsureSize(lenght);
-            Encoding.BigEndianUnicode.GetBytes(value, 0, value.Length, data, Position);
-            Position += lenght;
-        }*/
+            if (value.Length > length)
+                throw new ArgumentOutOfRangeException("value");
+            EnsureSize(length * 2);
+            foreach (char c in value)
+            {
+                data[Position++] = (byte)(c >> 8);
+                data[Position++] = (byte)(c);
+            }
+            Position += (length - value.Length) * 2;
+        }
     }
 }

@@ -32,18 +32,20 @@ HANDLE InitIPC(HWND _hwnd)
 BOOL SendIPCMessage(UOMessage msg, UINT data)
 {
 	mtx.lock();
-	BOOL result = SendMessage(hwnd, (int)msg, data, 0);
+	LRESULT result = SendMessage(hwnd, (int)msg, data, 0);
 	mtx.unlock();
-	return result;
+	return result == 1;
 }
 
 BOOL SendIPCData(UOMessage msg, LPVOID data, UINT len)
 {
 	mtx.lock();
 	memcpy(sharedMemory->bufferOut, data, len);
-	BOOL result = SendMessage(hwnd, (int)msg, len, 0);
+	LRESULT result = SendMessage(hwnd, (int)msg, len, 0);
+	if (result == 2)
+		memcpy(data, sharedMemory->bufferOut, len);
 	mtx.unlock();
-	return result;
+	return result == 1;
 }
 
 LRESULT RecvIPCMessage(UOMessage msg, WPARAM wParam, LPARAM lParam)

@@ -9,21 +9,17 @@ namespace UOInterface
     {
         private sealed class ClientWindow : NativeWindow
         {
-            private readonly IntPtr ptrTrue = new IntPtr(1), ptrFalse = new IntPtr(0);
             public ClientWindow() { CreateHandle(new CreateParams()); }
             protected override void WndProc(ref Message m)
             {
                 if (m.Msg >= (int)UOMessage.First && m.Msg <= (int)UOMessage.Last)
-                {
-                    bool? result = OnMessage((UOMessage)m.Msg, m.WParam.ToInt32());
-                    if (result.HasValue)
-                        m.Result = result.Value ? ptrTrue : ptrFalse;
-                }
+                    m.Result = OnMessage((UOMessage)m.Msg, m.WParam.ToInt32());
                 else
                     base.WndProc(ref m);
             }
         }
 
+        private static readonly IntPtr ptrOne = new IntPtr(1), ptrTwo = new IntPtr(2);
         public static bool PatchEncryption { get; set; }
         public static bool PatchMulti { get; set; }
         public static uint ServerIP { get; set; }
@@ -88,7 +84,7 @@ namespace UOInterface
             }
         }
 
-        private static unsafe bool? OnMessage(UOMessage msg, int wParam)
+        private static unsafe IntPtr OnMessage(UOMessage msg, int wParam)
         {
             switch (msg)
             {
@@ -133,23 +129,33 @@ namespace UOInterface
                     KeyEventArgs keyArgs = new KeyEventArgs((Keys)wParam);
                     if (keyDown != null)
                         keyDown(null, keyArgs);
-                    return keyArgs.Handled;
+                    if (keyArgs.Handled)
+                        return ptrOne;
+                    break;
 
                 case UOMessage.PacketToClient:
                     EventHandler<PacketEventArgs> toClient = PacketToClient;
                     PacketEventArgs toClientArgs = new PacketEventArgs(bufferIn, wParam);
                     if (toClient != null)
                         toClient(null, toClientArgs);
-                    return toClientArgs.Filter;
+                    if (toClientArgs.Filter)
+                        return ptrOne;
+                    if (toClientArgs.Packet.Changed)
+                        return ptrTwo;
+                    break;
 
                 case UOMessage.PacketToServer:
                     EventHandler<PacketEventArgs> toServer = PacketToServer;
                     PacketEventArgs toServerArgs = new PacketEventArgs(bufferIn, wParam);
                     if (toServer != null)
                         toServer(null, toServerArgs);
-                    return toServerArgs.Filter;
+                    if (toServerArgs.Filter)
+                        return ptrOne;
+                    if (toServerArgs.Packet.Changed)
+                        return ptrTwo;
+                    break;
             }
-            return null;
+            return IntPtr.Zero;
         }
 
         #region UOInterface
