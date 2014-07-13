@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using UOInterface.Network;
 
 namespace UOInterface
 {
@@ -28,7 +29,7 @@ namespace UOInterface
         public static event EventHandler Connected, Disconnecting, Closing;
         public static event EventHandler<bool> FocusChanged, VisibilityChanged;
         public static event EventHandler<KeyEventArgs> KeyDown;
-        public static event EventHandler<PacketEventArgs> PacketToClient, PacketToServer;
+        public static event EventHandler<Packet> PacketToClient, PacketToServer;
 
         private static IntPtr bufferOut;
         private static unsafe byte* bufferIn;
@@ -94,64 +95,48 @@ namespace UOInterface
                     break;
 
                 case UOMessage.Connected:
-                    EventHandler connected = Connected;
-                    if (connected != null)
-                        connected(null, EventArgs.Empty);
+                    Connected.Raise();
                     break;
 
                 case UOMessage.Disconnecting:
-                    EventHandler diconnecting = Disconnecting;
-                    if (diconnecting != null)
-                        diconnecting(null, EventArgs.Empty);
+                    Disconnecting.Raise();
                     break;
 
                 case UOMessage.Closing:
-                    EventHandler closing = Closing;
-                    if (closing != null)
-                        closing(null, EventArgs.Empty);
+                    Closing.Raise();
                     Application.ExitThread();
                     break;
 
                 case UOMessage.Focus:
-                    EventHandler<bool> focusChanged = FocusChanged;
-                    if (focusChanged != null)
-                        focusChanged(null, wParam != 0);
+                    FocusChanged.Raise(wParam != 0);
                     break;
 
                 case UOMessage.Visibility:
-                    EventHandler<bool> visibilityChanged = VisibilityChanged;
-                    if (visibilityChanged != null)
-                        visibilityChanged(null, wParam != 0);
+                    VisibilityChanged.Raise(wParam != 0);
                     break;
 
                 case UOMessage.KeyDown:
-                    EventHandler<KeyEventArgs> keyDown = KeyDown;
                     KeyEventArgs keyArgs = new KeyEventArgs((Keys)wParam);
-                    if (keyDown != null)
-                        keyDown(null, keyArgs);
+                    KeyDown.Raise(keyArgs);
                     if (keyArgs.Handled)
                         return ptrOne;
                     break;
 
                 case UOMessage.PacketToClient:
-                    EventHandler<PacketEventArgs> toClient = PacketToClient;
-                    PacketEventArgs toClientArgs = new PacketEventArgs(bufferIn, wParam);
-                    if (toClient != null)
-                        toClient(null, toClientArgs);
-                    if (toClientArgs.Filter)
+                    Packet toClient = new Packet(bufferIn, wParam);
+                    PacketToClient.Raise(toClient);
+                    if (toClient.Filter)
                         return ptrOne;
-                    if (toClientArgs.Packet.Changed)
+                    if (toClient.Changed)
                         return ptrTwo;
                     break;
 
                 case UOMessage.PacketToServer:
-                    EventHandler<PacketEventArgs> toServer = PacketToServer;
-                    PacketEventArgs toServerArgs = new PacketEventArgs(bufferIn, wParam);
-                    if (toServer != null)
-                        toServer(null, toServerArgs);
-                    if (toServerArgs.Filter)
+                    Packet toServer = new Packet(bufferIn, wParam);
+                    PacketToServer.Raise(toServer);
+                    if (toServer.Filter)
                         return ptrOne;
-                    if (toServerArgs.Packet.Changed)
+                    if (toServer.Changed)
                         return ptrTwo;
                     break;
             }
@@ -183,14 +168,5 @@ namespace UOInterface
             Last = Patch
         }
         #endregion
-    }
-
-    public class PacketEventArgs : EventArgs
-    {
-        public unsafe PacketEventArgs(byte* data, int len)
-        { Packet = new Packet(data, len); }
-
-        public Packet Packet { get; private set; }
-        public bool Filter { get; set; }
     }
 }

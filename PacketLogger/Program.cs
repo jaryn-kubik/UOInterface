@@ -1,5 +1,6 @@
 ﻿using System;
 using UOInterface;
+using UOInterface.Network;
 
 namespace PacketLogger
 {
@@ -25,24 +26,22 @@ namespace PacketLogger
             Client.Start("C:\\UO\\Test\\client.exe");
         }
 
-        private static void Client_PacketToClient(object sender, PacketEventArgs e)
+        private static void Client_PacketToClient(object sender, Packet p)
         {
             Console.Write("PacketToClient");
-            WritePacket(e.Packet);
-            if (e.Packet.ID == 0xAE)
-            {//duplicate recieved chat messages - just for fun (and for testing if it really works...)
-                Client.SendToClient(e.Packet.ToArray());
-            }
+            WritePacket(p);
+            if (p.ID == 0xAE)
+                //duplicate recieved chat messages - just for fun (and for testing if it really works...)
+                Client.SendToClient(p.ToArray());
         }
 
-        private static void Client_PacketToServer(object sender, PacketEventArgs e)
+        private static void Client_PacketToServer(object sender, Packet p)
         {
             Console.Write("PacketToServer");
-            WritePacket(e.Packet);
-            if (e.Packet.ID == 0xAD)
-            {//duplicate sent chat messages - just for fun (and for testing if it really works...)
-                Client.SendToServer(e.Packet.ToArray());
-            }
+            WritePacket(p);
+            if (p.ID == 0xAD)
+                //duplicate sent chat messages - just for fun (and for testing if it really works...)
+                Client.SendToServer(p.ToArray());
         }
 
         private static void WritePacket(Packet packet)

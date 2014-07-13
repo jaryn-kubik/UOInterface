@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace UOInterface
+namespace UOInterface.Network
 {
     public unsafe class Packet
     {
@@ -13,6 +13,7 @@ namespace UOInterface
         public int Length { get; private set; }
         public int Position { get; private set; }
         public bool Changed { get; private set; }
+        public bool Filter { get; set; }
 
         internal Packet(byte* data, int len)
         {

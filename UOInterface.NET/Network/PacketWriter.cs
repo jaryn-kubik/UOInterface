@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UOInterface
+namespace UOInterface.Network
 {
     public class PacketWriter
     {
