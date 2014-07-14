@@ -26,7 +26,7 @@ DWORD WINAPI Init(LPVOID hwnd)
 	return EXIT_FAILURE;
 }
 
-UOINTERFACE_API(void) Start(LPWSTR client, HWND hwnd)
+UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd)
 {
 	try
 	{
@@ -38,8 +38,10 @@ UOINTERFACE_API(void) Start(LPWSTR client, HWND hwnd)
 			throw L"CreateProcess";
 		Inject(pi.dwProcessId, hwnd);
 		ResumeThread(pi.hThread);
+		return pi.dwProcessId;
 	}
 	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Start", MB_ICONERROR | MB_OK); }
+	return -1;
 }
 
 UOINTERFACE_API(void) Inject(DWORD pid, HWND hwnd)

@@ -22,20 +22,22 @@ namespace UOInterface
         public static void RaiseAsync(this EventHandler handler, object sender = null) { RaiseAsync(handler, EventArgs.Empty, sender); }
         public static void RaiseAsync(this EventHandler handler, EventArgs e, object sender = null)
         {
-            Task.Run(() =>
-            {
-                try { Raise(handler, e, sender); }
-                catch (Exception ex) { MessageBox.Show(ex.ToString()); }
-            });
+            if (handler != null)
+                Task.Run(() =>
+                {
+                    try { handler(sender, e); }
+                    catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+                });
         }
 
         public static void RaiseAsync<T>(this EventHandler<T> handler, T e, object sender = null)
         {
-            Task.Run(() =>
-            {
-                try { Raise(handler, e, sender); }
-                catch (Exception ex) { MessageBox.Show(ex.ToString()); }
-            });
+            if (handler != null)
+                Task.Run(() =>
+                {
+                    try { handler(sender, e); }
+                    catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+                });
         }
     }
 }

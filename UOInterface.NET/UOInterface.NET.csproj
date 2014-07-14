@@ -53,6 +53,10 @@
     <Compile Include="Objects\Mobile.cs" />
     <Compile Include="Network\Packet.cs" />
     <Compile Include="Network\PacketWriter.cs" />
+    <Compile Include="PacketHandlers\Init.cs" />
+    <Compile Include="PacketHandlers\Mobiles.cs" />
+    <Compile Include="PacketHandlers\Movement.cs" />
+    <Compile Include="PacketHandlers\Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Types\Graphic.cs" />
     <Compile Include="Types\Hue.cs" />
@@ -60,9 +64,7 @@
     <Compile Include="Types\Serial.cs" />
     <Compile Include="World.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="PacketHandlers\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

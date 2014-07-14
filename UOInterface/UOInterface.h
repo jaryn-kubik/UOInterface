@@ -15,7 +15,7 @@ enum struct UOMessage
 	Last = Patch
 };
 
-UOINTERFACE_API(void) Start(LPWSTR client, HWND hwnd);
+UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd);
 UOINTERFACE_API(void) Inject(DWORD pid, HWND hwnd);
 
 UOINTERFACE_API(byte*) GetInBuffer();

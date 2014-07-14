@@ -22,15 +22,19 @@ namespace UOInterface
 
         public override bool IsValid { get { return Serial.IsItem; } }
         public override bool Exists { get { return World.ContainsItem(Serial); } }
-        /*public Serial RootContainer
+        public override int DistanceTo(Entity entity)
+        { return OnGround ? base.DistanceTo(entity) : World.GetEntity(RootContainer).DistanceTo(World.Player); }
+
+        public bool OnGround { get { return !Container.IsValid; } }
+        public Serial RootContainer
         {
             get
             {
                 Item item = this;
-                while (!item.Container.IsMobile && item.Container != 0)
+                while (item.Container.IsItem)
                     item = World.GetItem(item.Container);
-                return item.Container;
+                return item.Container.IsMobile ? item.Container : item;
             }
-        }*/
+        }
     }
 }

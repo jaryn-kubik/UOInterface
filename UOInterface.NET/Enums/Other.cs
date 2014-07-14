@@ -19,7 +19,6 @@ namespace UOInterface
         Female = 0x02,
         Poisoned = 0x04,
         YellowBar = 0x08,
-        ShowProperties = 0x20,
         WarMode = 0x40,
         Hidden = 0x80
     }

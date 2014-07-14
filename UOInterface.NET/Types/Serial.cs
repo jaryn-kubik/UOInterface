@@ -5,10 +5,10 @@ namespace UOInterface
 {
     public struct Serial : IComparable, IComparable<uint>
     {
-        public static readonly Serial Invalid = new Serial(uint.MaxValue);
+        public static readonly Serial Invalid = new Serial(0);
 
         private readonly uint value;
-        public Serial(uint serial) { value = serial; }
+        public Serial(uint serial) { value = serial & 0x7FFFFFFF; }
 
         public bool IsMobile { get { return value > 0 && value < 0x40000000; } }
         public bool IsItem { get { return value >= 0x40000000 && value < 0x80000000; } }

@@ -12,7 +12,7 @@ namespace UOInterface
         public Hue Hue { get; internal set; }
         public string Name { get; internal set; }
         public UOFlags Flags { get; internal set; }
-        public Position Position { get; internal set; }
+        public virtual Position Position { get; internal set; }
 
         public static implicit operator Serial(Entity entity) { return entity.Serial; }
         public static implicit operator uint(Entity entity) { return entity.Serial; }
@@ -35,5 +35,8 @@ namespace UOInterface
 
         public virtual bool IsValid { get { return Serial.IsValid; } }
         public virtual bool Exists { get { return World.Contains(Serial); } }
+
+        public virtual int DistanceTo(Entity entity) { return Position.DistanceTo(entity.Position); }
+        public int Distance { get { return DistanceTo(World.Player); } }
     }
 }

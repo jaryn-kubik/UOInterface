@@ -1,11 +1,12 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace UOInterface
 {
     public class Mobile : Entity
     {
         public new static readonly Mobile Invalid = new Mobile(Serial.Invalid);
-        internal Mobile(Serial serial) : base(serial) { Layers = new Serial[0x20]; }
+        internal Mobile(Serial serial) : base(serial) { }
 
         public ushort Hits { get; internal set; }
         public ushort HitsMax { get; internal set; }
@@ -41,7 +42,12 @@ namespace UOInterface
         public bool Renamable { get; internal set; }
         public bool Female { get; internal set; }
 
-        public Serial[] Layers { get; internal set; }
+        private readonly Serial[] layers = new Serial[0x20];
+        public Serial this[Layer layer]
+        {
+            get { return layers[(int)layer]; }
+            internal set { layers[(int)layer] = value; }
+        }
 
         protected override void ToString(StringBuilder sb)
         {
@@ -70,10 +76,23 @@ namespace UOInterface
 
         public override bool IsValid { get { return Serial.IsMobile; } }
         public override bool Exists { get { return World.ContainsMobile(Serial); } }
-        public int Distance { get { return Position.DistanceTo(World.Player.Position); } }
         public bool YellowBar { get { return Flags.HasFlag(UOFlags.YellowBar); } }
         public bool Poisoned { get { return Flags.HasFlag(UOFlags.Poisoned); } }
         public bool Hidden { get { return Flags.HasFlag(UOFlags.Hidden); } }
-        //public bool InParty { get { return World.IsInParty(Serial); } }
+        public bool InParty { get { return World.IsInParty(Serial); } }
+
+        public event EventHandler PositionChanged;
+        public override Position Position
+        {
+            get { return base.Position; }
+            internal set
+            {
+                if (value != base.Position)
+                {
+                    base.Position = value;
+                    PositionChanged.RaiseAsync(this);
+                }
+            }
+        }
     }
 }

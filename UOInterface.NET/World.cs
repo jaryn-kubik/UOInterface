@@ -5,39 +5,40 @@ using System.Linq;
 
 namespace UOInterface
 {
-    public static class World
+    public static partial class World
     {
         private static readonly ConcurrentDictionary<Serial, Item> items = new ConcurrentDictionary<Serial, Item>(1, 512);
         private static readonly ConcurrentDictionary<Serial, Mobile> mobiles = new ConcurrentDictionary<Serial, Mobile>(1, 64);
+        private static readonly List<Serial> party = new List<Serial>();
 
         public static IEnumerable<Item> Items { get { return items.Select(item => item.Value); } }
         public static IEnumerable<Mobile> Mobiles { get { return mobiles.Select(mobile => mobile.Value); } }
-        public static Serial PlayerSerial { get; private set; }
+        public static Serial[] Party { get { lock (party) return party.ToArray(); } }
         public static Mobile Player { get; private set; }
 
-        #region Events
         public static event EventHandler<Item> ItemAdded;
         public static event EventHandler<Item> ItemRemoved;
         public static event EventHandler<Mobile> MobileAdded;
         public static event EventHandler<Mobile> MobileRemoved;
-        #endregion
 
         static World()
         {
-            Client.Disconnecting += Client_Disconnecting;
-            PlayerSerial = Serial.Invalid;
+            Client.Disconnecting += (s, e) => Clear();
             Player = Mobile.Invalid;
+            InitHandlers();
         }
 
-        private static void Client_Disconnecting(object sender, EventArgs e)
+        private static void Clear()
         {
-            PlayerSerial = Serial.Invalid;
             Player = Mobile.Invalid;
-
+            lock (party)
+                party.Clear();
             items.Clear();
             mobiles.Clear();
+            movementQueue.Clear();
         }
 
+        public static bool IsInParty(Serial serial) { lock (party) return party.Contains(serial); }
         public static bool ContainsItem(Serial serial) { return items.ContainsKey(serial); }
         public static bool ContainsMobile(Serial serial) { return mobiles.ContainsKey(serial); }
         public static bool Contains(Serial serial)
@@ -110,10 +111,19 @@ namespace UOInterface
             }
             else
                 throw new ArgumentException("serial");
-            //else
-            //Debug.WriteLine("World", "Can't remove {0}. Invalid serial!", serial);
-            /*foreach (Serial s in GetContainerContents(serial))
-                Remove(s);*/
+            foreach (Serial s in GetContainerContents(serial))
+                Remove(s);
+        }
+
+        private static IEnumerable<Serial> GetContainerContents(Serial serial, bool recursive = true)
+        {
+            foreach (Item item in Items.Where(item => item.Container == serial))
+            {
+                if (recursive)
+                    foreach (Serial s in GetContainerContents(item.Serial))
+                        yield return s;
+                yield return item;
+            }
         }
     }
 }

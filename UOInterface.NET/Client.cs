@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -25,6 +26,7 @@ namespace UOInterface
         public static bool PatchMulti { get; set; }
         public static uint ServerIP { get; set; }
         public static ushort ServerPort { get; set; }
+        public static Version Version { get; private set; }
 
         public static event EventHandler Connected, Disconnecting, Closing;
         public static event EventHandler<bool> FocusChanged, VisibilityChanged;
@@ -48,7 +50,9 @@ namespace UOInterface
             }).Start();
             ready.WaitOne();
 
-            Start(client, handle);
+            int pid = Start(client, handle);
+            FileVersionInfo v = Process.GetProcessById(pid).MainModule.FileVersionInfo;
+            Version = new Version(v.FileMajorPart, v.FileMinorPart, v.FileBuildPart, v.FilePrivatePart);
             bufferIn = GetInBuffer();
             bufferOut = new IntPtr(GetOutBuffer());
             packetTable = GetPacketTable();
@@ -145,7 +149,7 @@ namespace UOInterface
 
         #region UOInterface
         [DllImport("UOInterface.dll", CharSet = CharSet.Unicode)]
-        private static extern void Start(string client, IntPtr hwnd);
+        private static extern int Start(string client, IntPtr hwnd);
 
         [DllImport("UOInterface.dll")]
         private static extern unsafe byte* GetInBuffer();
