@@ -22,7 +22,7 @@ namespace UOInterface
             Player.Direction = (Direction)p.ReadByte() & ~Direction.Running;
             sbyte z = p.ReadSByte();
 
-            Player.Position = new Position(x, y, z);
+            Player.OnPositionChanged(new Position(x, y, z));
         }
 
         private static void OnMovementAccepted(Packet p)//0x22
@@ -75,7 +75,7 @@ namespace UOInterface
                     x--;
                     break;
             }
-            Player.Position = new Position(x, y, p.Z);
+            Player.OnPositionChanged(new Position(x, y, p.Z));
             OnPlayerMoved();
         }
     }

@@ -15,11 +15,13 @@ namespace UOInterface
         public static IEnumerable<Mobile> Mobiles { get { return mobiles.Select(mobile => mobile.Value); } }
         public static Serial[] Party { get { lock (party) return party.ToArray(); } }
         public static Mobile Player { get; private set; }
+        public static Map Map { get; private set; }
 
         public static event EventHandler<Item> ItemAdded;
         public static event EventHandler<Item> ItemRemoved;
         public static event EventHandler<Mobile> MobileAdded;
         public static event EventHandler<Mobile> MobileRemoved;
+        public static event EventHandler MapChanged;
 
         static World()
         {

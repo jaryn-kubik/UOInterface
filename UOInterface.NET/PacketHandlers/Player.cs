@@ -19,18 +19,18 @@ namespace UOInterface
             //p.ReadUShort();//map width
             //p.ReadUShort();//map height
 
-            Player.Position = new Position(x, y, z);
+            Player.OnPositionChanged(new Position(x, y, z));
             AddMobile(Player);
         }
 
         private static void OnPlayerUpdate(Packet p)//0x20
         {
-            p.Skip(4);
+            p.Skip(4);//serial - useless since it's always player serial (???)
             movementQueue.Clear();
             Player.Graphic = p.ReadUShort();
             p.Skip(1);//unknown
             Player.Hue = p.ReadUShort();
-            Player.Flags = (UOFlags)p.ReadByte();
+            Player.OnFlagsChanged((MobileFlags)p.ReadByte());
             ushort x = p.ReadUShort();
             ushort y = p.ReadUShort();
             p.Skip(2);//unknown
@@ -38,7 +38,7 @@ namespace UOInterface
             sbyte z = p.ReadSByte();
 
             OnPlayerMoved();
-            Player.Position = new Position(x, y, z);
+            Player.OnPositionChanged(new Position(x, y, z));
             AddMobile(Player);
         }
 

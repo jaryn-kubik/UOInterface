@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace UOInterface
 {
@@ -11,8 +12,7 @@ namespace UOInterface
         public Graphic Graphic { get; internal set; }
         public Hue Hue { get; internal set; }
         public string Name { get; internal set; }
-        public UOFlags Flags { get; internal set; }
-        public virtual Position Position { get; internal set; }
+        public Position Position { get; private set; }
 
         public static implicit operator Serial(Entity entity) { return entity.Serial; }
         public static implicit operator uint(Entity entity) { return entity.Serial; }
@@ -27,8 +27,7 @@ namespace UOInterface
             sb.AppendFormat("Hue: {0}\n", Hue);
             if (!string.IsNullOrEmpty(Name))
                 sb.AppendFormat("Name: '{0}'\n", Name);
-            sb.AppendFormat("Position: {0}\n", Position);
-            sb.AppendFormat("Flags: {0}\n\n", Flags);
+            sb.AppendFormat("Position: {0}\n\n", Position);
             ToString(sb);
             return sb.ToString().Trim();
         }
@@ -38,5 +37,15 @@ namespace UOInterface
 
         public virtual int DistanceTo(Entity entity) { return Position.DistanceTo(entity.Position); }
         public int Distance { get { return DistanceTo(World.Player); } }
+
+        public event EventHandler PositionChanged;
+        internal void OnPositionChanged(Position position)
+        {
+            if (position != Position)
+            {
+                Position = position;
+                PositionChanged.RaiseAsync(this);
+            }
+        }
     }
 }

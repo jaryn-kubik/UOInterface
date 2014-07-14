@@ -15,6 +15,11 @@ namespace UOInterface
             //mobiles
             Communication.AddToClientHandler(0x77, OnMobileMoving, Priority.High);
             Communication.AddToClientHandler(0x78, OnMobileIncoming, Priority.High);
+            Communication.AddToClientHandler(0x2D, OnMobileAttributes, Priority.High);
+            Communication.AddToClientHandler(0xA1, OnMobileHits, Priority.High);
+            Communication.AddToClientHandler(0xA2, OnMobileMana, Priority.High);
+            Communication.AddToClientHandler(0xA3, OnMobileStamina, Priority.High);
+            Communication.AddToClientHandler(0x11, OnMobileStatus, Priority.High);
 
             //movement
             Communication.AddToServerHandler(0x02, OnMovementRequest, Priority.High);
@@ -22,6 +27,12 @@ namespace UOInterface
             Communication.AddToClientHandler(0x21, OnMovementRejected, Priority.High);
             Communication.AddToClientHandler(0x22, OnMovementAccepted, Priority.High);
             Communication.AddToClientHandler(0x97, OnMovementDemand, Priority.High);
+
+            //other
+            Communication.AddToClientHandler(0x4E, OnInfravision, Priority.High);
+            Communication.AddToClientHandler(0x4F, OnGlobalLight, Priority.High);
+            Communication.AddToClientHandler(0x1D, OnRemoveObject, Priority.High);
+            Communication.AddToClientHandler(0xBF, OnBigFuckingPacket, Priority.High);
         }
 
         private static readonly bool useNewMobileIncoming = Client.Version >= new Version(7, 0, 33);

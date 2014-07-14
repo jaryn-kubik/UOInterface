@@ -8,12 +8,12 @@ namespace UOInterface
         public new static readonly Mobile Invalid = new Mobile(Serial.Invalid);
         internal Mobile(Serial serial) : base(serial) { }
 
-        public ushort Hits { get; internal set; }
-        public ushort HitsMax { get; internal set; }
-        public ushort Mana { get; internal set; }
-        public ushort ManaMax { get; internal set; }
-        public ushort Stamina { get; internal set; }
-        public ushort StaminaMax { get; internal set; }
+        public ushort Hits { get; private set; }
+        public ushort HitsMax { get; private set; }
+        public ushort Mana { get; private set; }
+        public ushort ManaMax { get; private set; }
+        public ushort Stamina { get; private set; }
+        public ushort StaminaMax { get; private set; }
 
         public ushort Strength { get; internal set; }
         public ushort Intelligence { get; internal set; }
@@ -36,6 +36,7 @@ namespace UOInterface
         public ushort DamageMin { get; internal set; }
         public ushort DamageMax { get; internal set; }
 
+        public MobileFlags Flags { get; private set; }
         public Direction Direction { get; internal set; }
         public Notoriety Notoriety { get; internal set; }
         public bool WarMode { get; internal set; }
@@ -49,6 +50,8 @@ namespace UOInterface
             internal set { layers[(int)layer] = value; }
         }
 
+        public override bool IsValid { get { return Serial.IsMobile; } }
+        public override bool Exists { get { return World.ContainsMobile(Serial); } }
         protected override void ToString(StringBuilder sb)
         {
             sb.AppendFormat("Hits: {0}/{1}\n", Hits, HitsMax);
@@ -67,6 +70,7 @@ namespace UOInterface
             sb.AppendFormat("Tiths: {0}\n", TithingPoints);
             sb.AppendFormat("Damage: {0}-{1}\n", DamageMin, DamageMax);
             sb.AppendLine();
+            sb.AppendFormat("Flags: {0}\n", Flags);
             sb.AppendFormat("Direction: {0}\n", Direction);
             sb.AppendFormat("Notoriety: {0}\n", Notoriety);
             sb.AppendFormat("WarMode: {0}\n", WarMode);
@@ -74,25 +78,57 @@ namespace UOInterface
             sb.AppendFormat("Female: {0}", Female);
         }
 
-        public override bool IsValid { get { return Serial.IsMobile; } }
-        public override bool Exists { get { return World.ContainsMobile(Serial); } }
-        public bool YellowBar { get { return Flags.HasFlag(UOFlags.YellowBar); } }
-        public bool Poisoned { get { return Flags.HasFlag(UOFlags.Poisoned); } }
-        public bool Hidden { get { return Flags.HasFlag(UOFlags.Hidden); } }
+        public bool YellowBar { get { return Flags.HasFlag(MobileFlags.YellowBar); } }
+        public bool Poisoned { get { return Flags.HasFlag(MobileFlags.Poisoned); } }
+        public bool Hidden { get { return Flags.HasFlag(MobileFlags.Hidden); } }
         public bool InParty { get { return World.IsInParty(Serial); } }
 
-        public event EventHandler PositionChanged;
-        public override Position Position
+        #region Events
+        public event EventHandler HitsChanged;
+        internal void OnHitsChanged(ushort hitsMax, ushort hits)
         {
-            get { return base.Position; }
-            internal set
+            if (hits != Hits || hitsMax != HitsMax)
             {
-                if (value != base.Position)
-                {
-                    base.Position = value;
-                    PositionChanged.RaiseAsync(this);
-                }
+                Hits = hits;
+                HitsMax = hitsMax;
+                HitsChanged.RaiseAsync(this);
             }
         }
+
+        public event EventHandler ManaChanged;
+        internal void OnManaChanged(ushort manaMax, ushort mana)
+        {
+            if (mana != Mana || manaMax != ManaMax)
+            {
+                Mana = mana;
+                ManaMax = manaMax;
+                ManaChanged.RaiseAsync(this);
+            }
+        }
+
+        public event EventHandler StaminaChanged;
+        internal void OnStaminaChanged(ushort stamMax, ushort stam)
+        {
+            if (stam != Stamina || stamMax != StaminaMax)
+            {
+                Stamina = stam;
+                StaminaMax = stamMax;
+                StaminaChanged.RaiseAsync(this);
+            }
+        }
+
+        public event EventHandler FlagsChanged;
+        internal void OnFlagsChanged(MobileFlags flags)
+        {
+            if (flags != Flags)
+            {
+                Flags = flags;
+                FlagsChanged.RaiseAsync(this);
+            }
+        }
+
+        public event EventHandler StatusChanged;
+        internal void OnStatusChanged() { StatusChanged.RaiseAsync(this); }
+        #endregion
     }
 }
