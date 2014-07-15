@@ -11,6 +11,6 @@ struct SharedMemory
 extern SharedMemory *sharedMemory;
 
 HANDLE InitIPC(HWND hwnd);
-BOOL SendIPCMessage(UOMessage msg, UINT data = 0);
+BOOL SendIPCMessage(UOMessage msg, UINT wParam = 0, UINT lParam = 0);
 BOOL SendIPCData(UOMessage msg, LPVOID data, UINT len);
 LRESULT RecvIPCMessage(UOMessage msg, WPARAM wParam, LPARAM lParam);

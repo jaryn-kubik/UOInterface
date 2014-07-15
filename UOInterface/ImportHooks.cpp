@@ -43,18 +43,20 @@ bool HookImport(LPCSTR dll, LPCSTR function, DWORD ordinal, LPVOID hook)
 	return false;
 }
 
-BOOL OnKeyDown(UINT virtualKey)
+int GetKeyModifiers()
 {
-	if (GetKeyState(VK_SHIFT) & 0xFF00)
-		virtualKey |= (1 << 16);
-
-	if (GetKeyState(VK_CONTROL) & 0xFF00)
-		virtualKey |= (1 << 17);
+	int mods = (int)KeyModifiers::None;
 
 	if (GetKeyState(VK_MENU) & 0xFF00)
-		virtualKey |= (1 << 18);
+		mods |= (int)KeyModifiers::Alt;
 
-	return SendIPCMessage(UOMessage::KeyDown, virtualKey);
+	if (GetKeyState(VK_CONTROL) & 0xFF00)
+		mods |= (int)KeyModifiers::Control;
+
+	if (GetKeyState(VK_SHIFT) & 0xFF00)
+		mods |= (int)KeyModifiers::Shift;
+
+	return mods;
 }
 
 WPARAM keyToIgnore;
@@ -76,17 +78,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_MBUTTONDOWN:
-		if (OnKeyDown(VK_MBUTTON))
+		if (SendIPCMessage(UOMessage::KeyDown, VK_MBUTTON, GetKeyModifiers()))
 			return 0;
 		break;
 
 	case WM_XBUTTONDOWN:
-		if (OnKeyDown(HIWORD(wParam) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2))
+		if (SendIPCMessage(UOMessage::KeyDown, HIWORD(wParam) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2, GetKeyModifiers()))
 			return 0;
 		break;
 
 	case WM_MOUSEWHEEL:
-		if (OnKeyDown(GET_WHEEL_DELTA_WPARAM(wParam) < 0 ? VK_F23 : VK_F24))
+		if (SendIPCMessage(UOMessage::KeyDown, GET_WHEEL_DELTA_WPARAM(wParam) < 0 ? VK_F23 : VK_F24, GetKeyModifiers()))
 			return 0;
 		break;
 
@@ -94,7 +96,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
 		if (wParam != VK_SHIFT && wParam != VK_CONTROL && wParam != VK_MENU &&
-			(lParam & (1 << 30)) == 0 && OnKeyDown(wParam))
+			(lParam & (1 << 30)) == 0 && SendIPCMessage(UOMessage::KeyDown, wParam, GetKeyModifiers()))
 		{//bit 30 == previous key state
 			keyToIgnore = lParam;
 			return 0;

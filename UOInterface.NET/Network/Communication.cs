@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 
 namespace UOInterface.Network
 {
@@ -42,7 +41,7 @@ namespace UOInterface.Network
                     foreach (PacketHandler handler in toClient[p.ID])
                         handler.Handler(p);
             }
-            catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+            catch (Exception) { throw new NotImplementedException(); }
         }
 
         private static void Client_PacketToServer(object sender, Packet p)
@@ -53,7 +52,7 @@ namespace UOInterface.Network
                     foreach (PacketHandler handler in toServer[p.ID])
                         handler.Handler(p);
             }
-            catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+            catch (Exception) { throw new NotImplementedException(); }
         }
 
         private class PacketHandler : IComparable<PacketHandler>

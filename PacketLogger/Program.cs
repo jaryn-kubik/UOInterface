@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Windows.Forms;
 using UOInterface;
 using UOInterface.Network;
 
@@ -14,17 +16,25 @@ namespace PacketLogger
 
             Client.Connected += (s, e) => Console.WriteLine("Connected");
             Client.Disconnecting += (s, e) => Console.WriteLine("Disconnecting");
-            Client.Closing += (s, e) => Console.WriteLine("Closing");
+            Client.Closing += Client_Closing;
 
             Client.FocusChanged += (s, e) => Console.WriteLine("FocusChanged - " + e);
             Client.VisibilityChanged += (s, e) => Console.WriteLine("VisibilityChanged - " + e);
 
-            Client.KeyDown += (s, e) => Console.WriteLine("KeyDown - " + e.KeyData);
+            Client.KeyDown += (s, e) => Console.WriteLine("KeyDown - " + (Keys)e.VirtualCode);
             Client.PacketToClient += Client_PacketToClient;
             Client.PacketToServer += Client_PacketToServer;
 
-            Client.Start("C:\\UO\\Auberon\\client.exe");
-            Console.WriteLine("Client version: " + Client.Version);
+            Client.Start("C:\\UO\\Test\\client.exe");
+            Console.WriteLine("Client version - " + Client.Version);
+            close.WaitOne();
+        }
+
+        private static readonly ManualResetEvent close = new ManualResetEvent(false);
+        private static void Client_Closing(object sender, EventArgs e)
+        {
+            Console.WriteLine("Closing");
+            close.Set();
         }
 
         private static void Client_PacketToClient(object sender, Packet p)

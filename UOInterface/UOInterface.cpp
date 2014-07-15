@@ -4,6 +4,8 @@
 #include "PacketHooks.h"
 #include "IPC.h"
 #include "Macros.h"
+#include <thread>
+#include <future>
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
@@ -26,7 +28,46 @@ DWORD WINAPI Init(LPVOID hwnd)
 	return EXIT_FAILURE;
 }
 
-UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd)
+OnUOMessage callback;
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if (msg >= (UINT)UOMessage::First && msg <= (UINT)UOMessage::Last)
+	{
+		if (msg == (UINT)UOMessage::Closing)
+			PostQuitMessage(0);
+		return callback((UOMessage)msg, wParam, lParam);
+	}
+	return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+void MessagePump(std::promise<HWND> *p)
+{
+	try
+	{
+		WNDCLASS wnd = { 0 };
+		wnd.lpfnWndProc = WindowProc;
+		wnd.hInstance = GetModuleHandle(nullptr);
+		wnd.lpszClassName = L"UOInterface";
+
+		if (!RegisterClass(&wnd))
+			throw L"RegisterClass";
+
+		HWND hwnd = CreateWindow(wnd.lpszClassName, nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, wnd.hInstance, nullptr);
+		if (!hwnd)
+			throw L"CreateWindow";
+		p->set_value(hwnd);
+
+		MSG msg;
+		while (GetMessage(&msg, nullptr, 0, 0) > 0)
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Window thread", MB_ICONERROR | MB_OK); }
+}
+
+UOINTERFACE_API(DWORD) Start(LPWSTR client, OnUOMessage onMessage)
 {
 	try
 	{
@@ -36,7 +77,7 @@ UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd)
 		si.cb = sizeof(si);
 		if (!CreateProcess(client, nullptr, nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, nullptr, &si, &pi))
 			throw L"CreateProcess";
-		Inject(pi.dwProcessId, hwnd);
+		Inject(pi.dwProcessId, onMessage);
 		ResumeThread(pi.hThread);
 		return pi.dwProcessId;
 	}
@@ -44,10 +85,16 @@ UOINTERFACE_API(DWORD) Start(LPWSTR client, HWND hwnd)
 	return -1;
 }
 
-UOINTERFACE_API(void) Inject(DWORD pid, HWND hwnd)
+UOINTERFACE_API(void) Inject(DWORD pid, OnUOMessage onMessage)
 {
 	try
 	{
+		callback = onMessage;
+		std::promise<HWND> p;
+		std::thread t(MessagePump, &p);
+		HWND hwnd = p.get_future().get();
+		t.detach();
+
 		HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, pid);
 		if (!hProcess)
 			throw L"OpenProcess";
@@ -101,7 +148,7 @@ UOINTERFACE_API(void) Inject(DWORD pid, HWND hwnd)
 UOINTERFACE_API(byte*) GetInBuffer() { return sharedMemory->bufferOut; }
 UOINTERFACE_API(byte*) GetOutBuffer() { return sharedMemory->bufferIn; }
 UOINTERFACE_API(short*) GetPacketTable() { return sharedMemory->packetTable; }
-UOINTERFACE_API(void) SendIPCMessage(UOMessage msg, UINT wParam, UINT lParam)
+UOINTERFACE_API(void) SendUOMessage(UOMessage msg, int wParam, int lParam)
 {
 	SendMessage(sharedMemory->hwnd, (UINT)msg, wParam, lParam);
 }

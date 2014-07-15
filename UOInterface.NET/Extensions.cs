@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace UOInterface
 {
     public static class Extensions
     {
-        public static void Raise(this EventHandler handler, object sender = null) { Raise(handler, EventArgs.Empty, sender); }
-        public static void Raise(this EventHandler handler, EventArgs e, object sender = null)
+        public static void Raise(this EventHandler handler, object sender = null)
         {
             if (handler != null)
-                handler(sender, e);
+                handler(sender, EventArgs.Empty);
         }
 
         public static void Raise<T>(this EventHandler<T> handler, T e, object sender = null)
@@ -19,14 +17,13 @@ namespace UOInterface
                 handler(sender, e);
         }
 
-        public static void RaiseAsync(this EventHandler handler, object sender = null) { RaiseAsync(handler, EventArgs.Empty, sender); }
-        public static void RaiseAsync(this EventHandler handler, EventArgs e, object sender = null)
+        public static void RaiseAsync(this EventHandler handler, object sender = null)
         {
             if (handler != null)
                 Task.Run(() =>
                 {
-                    try { handler(sender, e); }
-                    catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+                    try { handler(sender, EventArgs.Empty); }
+                    catch (Exception) { throw new NotImplementedException(); }
                 });
         }
 
@@ -36,7 +33,7 @@ namespace UOInterface
                 Task.Run(() =>
                 {
                     try { handler(sender, e); }
-                    catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+                    catch (Exception) { throw new NotImplementedException(); }
                 });
         }
     }

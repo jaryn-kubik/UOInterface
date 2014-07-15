@@ -1,27 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Windows.Forms;
 using UOInterface.Network;
 
 namespace UOInterface
 {
     public static class Client
     {
-        private sealed class ClientWindow : NativeWindow
-        {
-            public ClientWindow() { CreateHandle(new CreateParams()); }
-            protected override void WndProc(ref Message m)
-            {
-                if (m.Msg >= (int)UOMessage.First && m.Msg <= (int)UOMessage.Last)
-                    m.Result = OnMessage((UOMessage)m.Msg, m.WParam.ToInt32());
-                else
-                    base.WndProc(ref m);
-            }
-        }
-
-        private static readonly IntPtr ptrOne = new IntPtr(1), ptrTwo = new IntPtr(2);
         public static bool PatchEncryption { get; set; }
         public static bool PatchMulti { get; set; }
         public static uint ServerIP { get; set; }
@@ -30,7 +15,7 @@ namespace UOInterface
 
         public static event EventHandler Connected, Disconnecting, Closing;
         public static event EventHandler<bool> FocusChanged, VisibilityChanged;
-        public static event EventHandler<KeyEventArgs> KeyDown;
+        public static event EventHandler<UOKeyEventArgs> KeyDown;
         public static event EventHandler<Packet> PacketToClient, PacketToServer;
 
         private static IntPtr bufferOut;
@@ -40,17 +25,7 @@ namespace UOInterface
 
         public static unsafe void Start(string client)
         {
-            IntPtr handle = IntPtr.Zero;
-            ManualResetEvent ready = new ManualResetEvent(false);
-            new Thread(() =>
-            {
-                handle = new ClientWindow().Handle;
-                ready.Set();
-                Application.Run();
-            }).Start();
-            ready.WaitOne();
-
-            int pid = Start(client, handle);
+            int pid = Start(client, onMessage);
             FileVersionInfo v = Process.GetProcessById(pid).MainModule.FileVersionInfo;
             Version = new Version(v.FileMajorPart, v.FileMinorPart, v.FileBuildPart, v.FilePrivatePart);
             bufferIn = GetInBuffer();
@@ -68,7 +43,7 @@ namespace UOInterface
 
         public static void Pathfind(ushort x, ushort y, ushort z)
         {
-            SendIPCMessage(UOMessage.Pathfinding, (uint)(x << 16 | y), z);
+            SendUOMessage(UOMessage.Pathfinding, (x << 16 | y), z);
         }
 
         public static void SendToClient(byte[] buffer)
@@ -76,7 +51,7 @@ namespace UOInterface
             lock (packetSync)
             {
                 Marshal.Copy(buffer, 0, bufferOut, buffer.Length);
-                SendIPCMessage(UOMessage.PacketToClient);
+                SendUOMessage(UOMessage.PacketToClient);
             }
         }
 
@@ -85,17 +60,18 @@ namespace UOInterface
             lock (packetSync)
             {
                 Marshal.Copy(buffer, 0, bufferOut, buffer.Length);
-                SendIPCMessage(UOMessage.PacketToServer);
+                SendUOMessage(UOMessage.PacketToServer);
             }
         }
 
-        private static unsafe IntPtr OnMessage(UOMessage msg, int wParam)
+        private static readonly OnUOMessage onMessage = OnMessage;
+        private static unsafe uint OnMessage(UOMessage msg, int wParam, int lParam)
         {
             switch (msg)
             {
                 case UOMessage.Init:
-                    SendIPCMessage(UOMessage.ConnectionInfo, ServerIP, ServerPort);
-                    SendIPCMessage(UOMessage.Patch, Convert.ToUInt32(PatchEncryption), Convert.ToUInt32(PatchMulti));
+                    SendUOMessage(UOMessage.ConnectionInfo, (int)ServerIP, ServerPort);
+                    SendUOMessage(UOMessage.Patch, PatchEncryption ? 1 : 0, PatchMulti ? 1 : 0);
                     break;
 
                 case UOMessage.Connected:
@@ -108,7 +84,6 @@ namespace UOInterface
 
                 case UOMessage.Closing:
                     Closing.Raise();
-                    Application.ExitThread();
                     break;
 
                 case UOMessage.Focus:
@@ -120,36 +95,36 @@ namespace UOInterface
                     break;
 
                 case UOMessage.KeyDown:
-                    KeyEventArgs keyArgs = new KeyEventArgs((Keys)wParam);
+                    UOKeyEventArgs keyArgs = new UOKeyEventArgs(wParam, lParam);
                     KeyDown.Raise(keyArgs);
-                    if (keyArgs.Handled)
-                        return ptrOne;
+                    if (keyArgs.Filter)
+                        return 1;
                     break;
 
                 case UOMessage.PacketToClient:
                     Packet toClient = new Packet(bufferIn, wParam);
                     PacketToClient.Raise(toClient);
                     if (toClient.Filter)
-                        return ptrOne;
+                        return 1;
                     if (toClient.Changed)
-                        return ptrTwo;
+                        return 2;
                     break;
 
                 case UOMessage.PacketToServer:
                     Packet toServer = new Packet(bufferIn, wParam);
                     PacketToServer.Raise(toServer);
                     if (toServer.Filter)
-                        return ptrOne;
+                        return 1;
                     if (toServer.Changed)
-                        return ptrTwo;
+                        return 2;
                     break;
             }
-            return IntPtr.Zero;
+            return 0;
         }
 
         #region UOInterface
         [DllImport("UOInterface.dll", CharSet = CharSet.Unicode)]
-        private static extern int Start(string client, IntPtr hwnd);
+        private static extern int Start(string client, OnUOMessage onMessage);
 
         [DllImport("UOInterface.dll")]
         private static extern unsafe byte* GetInBuffer();
@@ -161,16 +136,32 @@ namespace UOInterface
         private static extern unsafe short* GetPacketTable();
 
         [DllImport("UOInterface.dll")]
-        private static extern void SendIPCMessage(UOMessage msg, uint wParam = 0, uint lParam = 0);
+        private static extern void SendUOMessage(UOMessage msg, int wParam = 0, int lParam = 0);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate uint OnUOMessage(UOMessage msg, int wParam, int lParam);
         private enum UOMessage
         {
-            First = 0x0400,
-            Init = First, Connected, Disconnecting, Closing, Focus, Visibility,
+            Init = 0x0400, Connected, Disconnecting, Closing, Focus, Visibility,
             KeyDown, PacketToClient, PacketToServer,
-            ConnectionInfo, Pathfinding, Patch,
-            Last = Patch
+            ConnectionInfo, Pathfinding, Patch
         }
         #endregion
+    }
+
+    public class UOKeyEventArgs : EventArgs
+    {
+        internal UOKeyEventArgs(int virtualCode, int mods)
+        {
+            VirtualCode = virtualCode;
+            Modifiers = mods;
+        }
+
+        public int VirtualCode { get; private set; }
+        public int Modifiers { get; private set; }
+        public bool Alt { get { return (Modifiers & 1) != 0; } }
+        public bool Control { get { return (Modifiers & 2) != 0; } }
+        public bool Shift { get { return (Modifiers & 4) != 0; } }
+        public bool Filter { get; set; }
     }
 }

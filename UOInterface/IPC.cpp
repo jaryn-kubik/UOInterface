@@ -29,10 +29,10 @@ HANDLE InitIPC(HWND _hwnd)
 	return mapping;
 }
 
-BOOL SendIPCMessage(UOMessage msg, UINT data)
+BOOL SendIPCMessage(UOMessage msg, UINT wParam, UINT lParam)
 {
 	mtx.lock();
-	LRESULT result = SendMessage(hwnd, (int)msg, data, 0);
+	LRESULT result = SendMessage(hwnd, (int)msg, wParam, lParam);
 	mtx.unlock();
 	return result == 1;
 }
