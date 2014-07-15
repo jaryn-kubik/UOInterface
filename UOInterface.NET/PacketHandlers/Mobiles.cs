@@ -39,16 +39,16 @@ namespace UOInterface
                 Item item = GetOrCreateItem(itemSerial);
                 ushort graphic = p.ReadUShort();
 
-                if (useNewMobileIncoming)
+                if (useNewMobileIncoming.Value)
                     item.Graphic = graphic;
-                else if (usePostSAChanges)
+                else if (usePostSAChanges.Value)
                     item.Graphic = (ushort)(graphic & 0x7FFF);
                 else
                     item.Graphic = (ushort)(graphic & 0x3FFF);
 
                 item.Layer = (Layer)p.ReadByte();
 
-                if (useNewMobileIncoming || (graphic & 0x8000) != 0)
+                if (useNewMobileIncoming.Value || (graphic & 0x8000) != 0)
                     item.Hue = p.ReadUShort();
 
                 item.Container = mobile.Serial;

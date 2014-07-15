@@ -35,9 +35,9 @@ namespace UOInterface
             Communication.AddToClientHandler(0xBF, OnBigFuckingPacket, Priority.High);
         }
 
-        private static readonly bool useNewMobileIncoming = Client.Version >= new Version(7, 0, 33);
-        private static readonly bool usePostHSChanges = Client.Version >= new Version(7, 0, 9);
-        private static readonly bool usePostSAChanges = Client.Version >= new Version(7, 0);
-        private static readonly bool usePostKRPackets = Client.Version >= new Version(6, 0, 1, 7);
+        private static readonly Lazy<bool> useNewMobileIncoming = new Lazy<bool>(() => Client.Version >= new Version(7, 0, 33));
+        private static readonly Lazy<bool> usePostHSChanges = new Lazy<bool>(() => Client.Version >= new Version(7, 0, 9));
+        private static readonly Lazy<bool> usePostSAChanges = new Lazy<bool>(() => Client.Version >= new Version(7, 0));
+        private static readonly Lazy<bool> usePostKRPackets = new Lazy<bool>(() => Client.Version >= new Version(6, 0, 1, 7));
     }
 }

@@ -35,24 +35,26 @@ namespace UOInterface.Network
 
         private static void Client_PacketToClient(object sender, Packet p)
         {
-            try
-            {
-                lock (toClient)
+            //try
+            //{
+            lock (toClient)
+                if (toClient[p.ID] != null)
                     foreach (PacketHandler handler in toClient[p.ID])
                         handler.Handler(p);
-            }
-            catch (Exception) { throw new NotImplementedException(); }
+            //}
+            //catch (Exception) { throw new NotImplementedException(); }
         }
 
         private static void Client_PacketToServer(object sender, Packet p)
         {
-            try
-            {
-                lock (toServer)
+            //try
+            //{
+            lock (toServer)
+                if (toServer[p.ID] != null)
                     foreach (PacketHandler handler in toServer[p.ID])
                         handler.Handler(p);
-            }
-            catch (Exception) { throw new NotImplementedException(); }
+            //}
+            //catch (Exception) { throw new NotImplementedException(); }
         }
 
         private class PacketHandler : IComparable<PacketHandler>
