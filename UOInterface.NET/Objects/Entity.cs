@@ -9,10 +9,10 @@ namespace UOInterface
         protected Entity(Serial serial) { Serial = serial; }
 
         public Serial Serial { get; private set; }
-        public Graphic Graphic { get; internal set; }
-        public Hue Hue { get; internal set; }
-        public string Name { get; internal set; }
-        public Position Position { get; private set; }
+        public Graphic Graphic { get; private set; }
+        public Hue Hue { get; private set; }
+        public string Name { get; private set; }
+        public Position Position { get; protected set; }
 
         public static implicit operator Serial(Entity entity) { return entity.Serial; }
         public static implicit operator uint(Entity entity) { return entity.Serial; }
@@ -38,14 +38,23 @@ namespace UOInterface
         public virtual int DistanceTo(Entity entity) { return Position.DistanceTo(entity.Position); }
         public int Distance { get { return DistanceTo(World.Player); } }
 
-        public event EventHandler PositionChanged;
-        internal void OnPositionChanged(Position position)
+        #region Events
+        public event EventHandler AppearanceChanged;
+        internal void OnAppearanceChanged(Graphic? graphic = null, Hue? hue = null, string name = null)
         {
-            if (position != Position)
+            if ((graphic.HasValue && graphic != Graphic) ||
+                (hue.HasValue && hue != Hue) ||
+                (name != null && name != Name))
             {
-                Position = position;
-                PositionChanged.RaiseAsync(this);
+                if (graphic.HasValue)
+                    Graphic = graphic.Value;
+                if (hue.HasValue)
+                    Hue = hue.Value;
+                if (name != null)
+                    Name = name;
+                AppearanceChanged.RaiseAsync(this);
             }
         }
+        #endregion
     }
 }

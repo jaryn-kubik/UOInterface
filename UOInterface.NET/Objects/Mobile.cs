@@ -15,6 +15,11 @@ namespace UOInterface
         public ushort Stamina { get; private set; }
         public ushort StaminaMax { get; private set; }
 
+        public MobileFlags Flags { get; private set; }
+        public Direction Direction { get; private set; }
+        public Notoriety Notoriety { get; private set; }
+        public bool WarMode { get; private set; }
+
         public ushort Strength { get; internal set; }
         public ushort Intelligence { get; internal set; }
         public ushort Dexterity { get; internal set; }
@@ -36,19 +41,11 @@ namespace UOInterface
         public ushort DamageMin { get; internal set; }
         public ushort DamageMax { get; internal set; }
 
-        public MobileFlags Flags { get; private set; }
-        public Direction Direction { get; internal set; }
-        public Notoriety Notoriety { get; internal set; }
-        public bool WarMode { get; internal set; }
         public bool Renamable { get; internal set; }
         public bool Female { get; internal set; }
 
         private readonly Serial[] layers = new Serial[0x20];
-        public Serial this[Layer layer]
-        {
-            get { return layers[(int)layer]; }
-            internal set { layers[(int)layer] = value; }
-        }
+        public Serial this[Layer layer] { get { return layers[(int)layer]; } }
 
         public override bool IsValid { get { return Serial.IsMobile; } }
         public override bool Exists { get { return World.ContainsMobile(Serial); } }
@@ -84,6 +81,18 @@ namespace UOInterface
         public bool InParty { get { return World.IsInParty(Serial); } }
 
         #region Events
+        public event EventHandler Moved;
+        internal void OnMoved(Position position, Direction dir)
+        {
+            dir &= ~Direction.Running;
+            if (position != Position || dir != Direction)
+            {
+                Position = position;
+                Direction = dir;
+                Moved.RaiseAsync(this);
+            }
+        }
+
         public event EventHandler HitsChanged;
         internal void OnHitsChanged(ushort hitsMax, ushort hits)
         {
@@ -118,17 +127,34 @@ namespace UOInterface
         }
 
         public event EventHandler FlagsChanged;
-        internal void OnFlagsChanged(MobileFlags flags)
+        internal void OnFlagsChanged(MobileFlags? flags = null, Notoriety? notoriety = null, bool? warMode = null)
         {
-            if (flags != Flags)
+            if ((flags.HasValue && flags != Flags) ||
+                (notoriety.HasValue && notoriety != Notoriety) ||
+                (warMode.HasValue && warMode != WarMode))
             {
-                Flags = flags;
+                if (flags.HasValue)
+                    Flags = flags.Value;
+                if (notoriety.HasValue)
+                    Notoriety = notoriety.Value;
+                if (warMode.HasValue)
+                    WarMode = warMode.Value;
                 FlagsChanged.RaiseAsync(this);
             }
         }
 
         public event EventHandler StatusChanged;
         internal void OnStatusChanged() { StatusChanged.RaiseAsync(this); }
+
+        public event EventHandler LayerChanged;
+        internal void OnLayerChanged(Layer layer, Serial serial)
+        {
+            if (serial != layers[(int)layer])
+            {
+                layers[(int)layer] = serial;
+                LayerChanged.RaiseAsync(this);
+            }
+        }
         #endregion
     }
 }

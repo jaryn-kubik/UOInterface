@@ -10,16 +10,14 @@ namespace UOInterface
             Clear();
             Player = GetOrCreateMobile(p.ReadUInt());
             p.Skip(4);//unknown
-            Player.Graphic = p.ReadUShort();
-            ushort x = p.ReadUShort();
-            ushort y = p.ReadUShort();
-            sbyte z = (sbyte)p.ReadUShort();
-            Player.Direction = (Direction)p.ReadByte() & ~Direction.Running;
-            //p.Skip(9);
+
+            ushort graphic = p.ReadUShort();
+            Player.OnMoved(new Position(p.ReadUShort(), p.ReadUShort(), (sbyte)p.ReadUShort()), (Direction)p.ReadByte());
+            Player.OnAppearanceChanged(graphic, 0);
+            //p.Skip(9);//unknown
             //p.ReadUShort();//map width
             //p.ReadUShort();//map height
 
-            Player.OnPositionChanged(new Position(x, y, z));
             AddMobile(Player);
         }
 
@@ -27,23 +25,22 @@ namespace UOInterface
         {
             p.Skip(4);//serial - useless since it's always player serial (???)
             movementQueue.Clear();
-            Player.Graphic = p.ReadUShort();
-            p.Skip(1);//unknown
-            Player.Hue = p.ReadUShort();
+
+            Player.OnAppearanceChanged((ushort)(p.ReadUShort() + p.ReadSByte()), p.ReadUShort());
             Player.OnFlagsChanged((MobileFlags)p.ReadByte());
             ushort x = p.ReadUShort();
             ushort y = p.ReadUShort();
             p.Skip(2);//unknown
-            Player.Direction = (Direction)p.ReadByte() & ~Direction.Running;
+            Direction dir = (Direction)p.ReadByte();
             sbyte z = p.ReadSByte();
 
+            Player.OnMoved(new Position(x, y, z), dir);
             OnPlayerMoved();
-            Player.OnPositionChanged(new Position(x, y, z));
             AddMobile(Player);
         }
 
         private static void OnWarMode(Packet packet)//0x72
-        { Player.WarMode = packet.ReadBool(); }
+        { Player.OnFlagsChanged(warMode: packet.ReadBool()); }
 
         private static void OnPlayerMoved()
         {

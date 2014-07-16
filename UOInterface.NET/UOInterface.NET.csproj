@@ -48,7 +48,7 @@
     <Compile Include="Enums\Speech.cs" />
     <Compile Include="Enums\Spell.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="Network\Communication.cs" />
+    <Compile Include="Network\Handlers.cs" />
     <Compile Include="Objects\Entity.cs" />
     <Compile Include="Objects\Item.cs" />
     <Compile Include="Objects\Mobile.cs" />
@@ -60,6 +60,7 @@
     <Compile Include="PacketHandlers\Movement.cs" />
     <Compile Include="PacketHandlers\Other.cs" />
     <Compile Include="PacketHandlers\Player.cs" />
+    <Compile Include="PacketHandlers\Speech.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Types\Graphic.cs" />
     <Compile Include="Types\Hue.cs" />

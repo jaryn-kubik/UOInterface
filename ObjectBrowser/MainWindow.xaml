@@ -1,0 +1,15 @@
+﻿<Window x:Class="ObjectBrowser.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:objectBrowser="clr-namespace:ObjectBrowser"
+        Title="ObjectBrowser" Height="600" Width="500"
+        WindowStartupLocation="CenterScreen">
+    <TabControl>
+        <TabItem Header="Events">
+            <objectBrowser:Events></objectBrowser:Events>
+        </TabItem>
+        <TabItem Header="Mobiles">
+            <objectBrowser:MobileBrowser></objectBrowser:MobileBrowser>
+        </TabItem>
+    </TabControl>
+</Window>

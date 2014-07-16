@@ -35,7 +35,6 @@ namespace UOInterface
 
                 case 8://map change
                     Map = (Map)p.ReadByte();
-                    OnPlayerMoved();
                     MapChanged.RaiseAsync();
                     break;
             }

@@ -21,7 +21,7 @@ namespace UOInterface
         public static event EventHandler<Item> ItemRemoved;
         public static event EventHandler<Mobile> MobileAdded;
         public static event EventHandler<Mobile> MobileRemoved;
-        public static event EventHandler MapChanged;
+        public static event EventHandler MapChanged, Cleared;
 
         static World()
         {
@@ -38,6 +38,7 @@ namespace UOInterface
             items.Clear();
             mobiles.Clear();
             movementQueue.Clear();
+            Cleared.RaiseAsync();
         }
 
         public static bool IsInParty(Serial serial) { lock (party) return party.Contains(serial); }

@@ -8,55 +8,46 @@ namespace UOInterface
         private static void OnMobileMoving(Packet p)//0x77
         {
             Mobile mobile = GetOrCreateMobile(p.ReadUInt());
-            mobile.Graphic = p.ReadUShort();
-            ushort x = p.ReadUShort();
-            ushort y = p.ReadUShort();
-            sbyte z = p.ReadSByte();
-            mobile.Direction = (Direction)p.ReadByte() & ~Direction.Running;
-            mobile.Hue = p.ReadUShort();
-            mobile.OnFlagsChanged((MobileFlags)p.ReadByte());
-            mobile.Notoriety = (Notoriety)p.ReadByte();
-
-            mobile.OnPositionChanged(new Position(x, y, z));
+            ushort g = p.ReadUShort();
+            mobile.OnMoved(new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte()), (Direction)p.ReadByte());
+            mobile.OnAppearanceChanged(g, p.ReadUShort());
+            mobile.OnFlagsChanged((MobileFlags)p.ReadByte(), (Notoriety)p.ReadByte());
             AddMobile(mobile);
         }
 
         private static void OnMobileIncoming(Packet p)//0x78
         {
             Mobile mobile = GetOrCreateMobile(p.ReadUInt());
-            mobile.Graphic = p.ReadUShort();
-            ushort x = p.ReadUShort();
-            ushort y = p.ReadUShort();
-            sbyte z = p.ReadSByte();
-            mobile.Direction = (Direction)p.ReadByte() & ~Direction.Running;
-            mobile.Hue = p.ReadUShort();
-            mobile.OnFlagsChanged((MobileFlags)p.ReadByte());
-            mobile.Notoriety = (Notoriety)p.ReadByte();
+            ushort g = p.ReadUShort();
+            mobile.OnMoved(new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte()), (Direction)p.ReadByte());
+            mobile.OnAppearanceChanged(g, p.ReadUShort());
+            mobile.OnFlagsChanged((MobileFlags)p.ReadByte(), (Notoriety)p.ReadByte());
 
             uint itemSerial;
             while ((itemSerial = p.ReadUInt()) != 0)
             {
                 Item item = GetOrCreateItem(itemSerial);
                 ushort graphic = p.ReadUShort();
-
-                if (useNewMobileIncoming.Value)
-                    item.Graphic = graphic;
-                else if (usePostSAChanges.Value)
-                    item.Graphic = (ushort)(graphic & 0x7FFF);
-                else
-                    item.Graphic = (ushort)(graphic & 0x3FFF);
-
-                item.Layer = (Layer)p.ReadByte();
-
+                Layer layer = (Layer)p.ReadByte();
+                ushort hue = item.Hue;
                 if (useNewMobileIncoming.Value || (graphic & 0x8000) != 0)
-                    item.Hue = p.ReadUShort();
+                    hue = p.ReadUShort();
 
+                if (!useNewMobileIncoming.Value)
+                {
+                    if (usePostSAChanges.Value)
+                        graphic &= 0x7FFF;
+                    else
+                        graphic &= 0x3FFF;
+                }
+
+                item.OnAppearanceChanged(graphic, hue);
+                item.Layer = layer;
                 item.Container = mobile.Serial;
-                mobile[item.Layer] = item.Serial;
+                mobile.OnLayerChanged(layer, item.Serial);
                 AddItem(item);
             }
 
-            mobile.OnPositionChanged(new Position(x, y, z));
             AddMobile(mobile);
         }
 
@@ -98,13 +89,16 @@ namespace UOInterface
             if (!mobile.IsValid)
                 throw new Exception("OnMobileStatus");//does this happen?
 
-            mobile.Name = p.ReadStringAscii(30);
+            mobile.OnAppearanceChanged(name: p.ReadStringAscii(30));
             mobile.OnHitsChanged(hits: p.ReadUShort(), hitsMax: p.ReadUShort());
             mobile.Renamable = p.ReadBool();
 
             byte type = p.ReadByte();
             if (type > 0)
             {
+                if (mobile != Player)
+                    throw new Exception("OnMobileStatus");//does this happen?
+
                 mobile.Female = p.ReadBool();
                 mobile.Strength = p.ReadUShort();
                 mobile.Dexterity = p.ReadUShort();
