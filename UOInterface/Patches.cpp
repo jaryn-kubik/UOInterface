@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Utils.h"
 #include "UOInterface.h"
+#include "ImportHooks.h"
 
 void SetByte(byte* address, byte data)
 {
@@ -89,96 +90,52 @@ void PatchEncryption()
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
-void SingleCheck()
+HWND WINAPI Hook_FindWindowA(LPCSTR lpClassName, LPCSTR lpWindowName)
 {
-	//1.x - 7.x
-	byte sig[] = { 0x85, 0xC0, 0x74, 0x15, 0x6A, 0x40 };
-
-	byte *offset;
-	if (FindCode(sig, sizeof(sig), &offset))
-		SetByte(offset + 2, 0xEB);
+	if (lpWindowName == nullptr && strcmp(lpClassName, "Ultima Online") == 0)
+		return nullptr;
+	return FindWindowA(lpClassName, lpWindowName);
 }
 
-void DoubleCheck()
+HANDLE WINAPI Hook_CreateFileMappingA(HANDLE hFile, LPSECURITY_ATTRIBUTES lpAttributes,
+	DWORD flProtect, DWORD dwSizeHigh, DWORD dwSizeLow, LPCSTR lpName)
 {
-	//1.x - 3.x
-	byte sig[] = { 0x3D, 0xB7, 0x00, 0x00, 0x00, 0x75, 0x1B, 0x8B, 0x0D };
-
-	byte *offset;
-	if (FindCode(sig, sizeof(sig), &offset))
-	{
-		SetByte(offset + 0x37, 0xEB);
-		SetByte(offset - 8, 0xEB);
-	}
-}
-
-bool TripleCheck()
-{
-	//4.x - 5.x
-	byte sig1[] = { 0x3B, 0xC3, 0x89, 0x44, 0x24, 0x10, 0x75, 0x12 };
-	//6.x - 7.x
-	byte sig2[] = { 0x3B, 0xC3, 0x89, 0x44, 0x24, 0x08 };
-
-	bool result;
-	byte *offset;
-	if (result = FindCode(sig1, sizeof(sig1), &offset))
-	{
-		SetByte(offset + 6, 0xEB);
-		SetByte(offset + 0x25, 0xEB);
-		SetByte(offset + 0x4B, 0xEB);
-	}
-	else if (result = FindCode(sig2, sizeof(sig2), &offset))
-	{
-		SetByte(offset + 6, 0xEB);
-		SetByte(offset + 0x2D, 0xEB);
-		SetByte(offset + 0x5F, 0xEB);
-	}
+	HANDLE result = CreateFileMappingA(hFile, lpAttributes, flProtect, dwSizeHigh, dwSizeLow, lpName);
+	if (lpName != nullptr && strcmp(lpName, "UoClientApp") == 0 && GetLastError() == ERROR_ALREADY_EXISTS)
+		SetLastError(0);
 	return result;
 }
 
-void ErrorCheck()
+char mutexName[32];
+HANDLE WINAPI Hook_OpenMutexA(DWORD dwDesiredAccess, BOOL bInheritHandle, LPCSTR lpName)
 {
-	//6.x - 7.x
-	byte sig1[] = { 0x85, 0xC0, 0x5F, 0x5E, 0x75, 0x2F };
-	//4.x - 5.x
-	byte sig2[] = { 0x85, 0xC0, 0x75, 0x2F, 0xBF };
-
-	byte *offset;
-	if (FindCode(sig1, sizeof(sig1), &offset))
-	{
-		SetByte(offset + 4, 0x90);
-		SetByte(offset + 5, 0x90);
-	}
-	else if (FindCode(sig2, sizeof(sig2), &offset))
-	{
-		SetByte(offset, 0x66);
-		SetByte(offset + 1, 0x33);
-		SetByte(offset + 2, 0xC0);
-		SetByte(offset + 3, 0x90);
-	}
+	if (lpName != nullptr && strcmp(lpName, "report") == 0)
+		lpName = mutexName;
+	return OpenMutexA(dwDesiredAccess, bInheritHandle, lpName);
 }
 
-bool SevenSingleCheck()
+HANDLE WINAPI Hook_CreateMutexA(LPSECURITY_ATTRIBUTES lpMutexAttributes, BOOL bInitialOwner, LPCSTR lpName)
 {
-	byte sig[] = { 0x83, 0xC4, 0x04, 0x33, 0xED, 0x55, 0x50, 0xFF, 0x15 };
-	byte *offset;
-	if (FindCode(sig, sizeof(sig), &offset))
-	{
-		SetByte(offset + 0xD, 0x39);
-		return true;
-	}
-	return false;
+	if (lpName != nullptr && strcmp(lpName, "report") == 0)
+		lpName = mutexName;
+	return CreateMutexA(lpMutexAttributes, bInitialOwner, lpName);
 }
 
 void PatchMulti()
 {
-	if (!SevenSingleCheck())
-	{
-		ErrorCheck();
-		SingleCheck();
-		if (!TripleCheck())
-			DoubleCheck();
-	}
+	if (!HookImport("user32.dll", "FindWindowA", 0, Hook_FindWindowA))
+		throw L"PatchMulti: FindWindowA";
+
+	if (!HookImport("kernel32.dll", "CreateFileMappingA", 0, Hook_CreateFileMappingA))
+		throw L"PatchMulti: CreateFileMappingA";
+
+	if (!HookImport("kernel32.dll", "OpenMutexA", 0, Hook_OpenMutexA))
+		throw L"PatchMulti: OpenMutexA";
+
+	if (!HookImport("kernel32.dll", "CreateMutexA", 0, Hook_CreateMutexA))
+		throw L"PatchMulti: CreateMutexA";
+
+	sprintf_s(mutexName, "report_%d", GetCurrentProcessId());
 }
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
