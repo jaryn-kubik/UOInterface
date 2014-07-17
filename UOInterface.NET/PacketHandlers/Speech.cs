@@ -36,5 +36,16 @@ namespace UOInterface
             mobile.OnAppearanceChanged(graphic, name: p.ReadStringAscii(30));
             AddMobile(mobile);
         }
+
+        private static void OnLocalizedMessageAffix(Packet p)//0xCC
+        {
+            Mobile mobile = GetMobile(p.ReadUInt());
+            if (!mobile.IsValid)//server?
+                return;
+            ushort graphic = p.ReadUShort();
+            p.Skip(10);
+            mobile.OnAppearanceChanged(graphic, name: p.ReadStringAscii(30));
+            AddMobile(mobile);
+        }
     }
 }

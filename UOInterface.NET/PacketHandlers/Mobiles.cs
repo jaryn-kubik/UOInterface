@@ -87,32 +87,32 @@ namespace UOInterface
         {
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
-                throw new Exception("OnMobileStatus");//does this happen?
+                throw new Exception("OnMobileStatus - !mobile.IsValid");//does this happen?
 
             mobile.OnAppearanceChanged(name: p.ReadStringAscii(30));
             mobile.OnHitsChanged(hits: p.ReadUShort(), hitsMax: p.ReadUShort());
-            mobile.Renamable = p.ReadBool();
+            mobile.OnRenamableChanged(p.ReadBool());
 
             byte type = p.ReadByte();
             if (type > 0)
             {
                 if (mobile != Player)
-                    throw new Exception("OnMobileStatus");//does this happen?
+                    throw new Exception("OnMobileStatus - mobile != Player");//does this happen?
 
-                mobile.Female = p.ReadBool();
-                mobile.Strength = p.ReadUShort();
-                mobile.Dexterity = p.ReadUShort();
-                mobile.Intelligence = p.ReadUShort();
-                mobile.OnStaminaChanged(stam: p.ReadUShort(), stamMax: p.ReadUShort());
-                mobile.OnManaChanged(mana: p.ReadUShort(), manaMax: p.ReadUShort());
-                mobile.Gold = p.ReadUInt();
-                mobile.ResistPhysical = p.ReadUShort();
-                mobile.Weight = p.ReadUShort();
+                Player.Female = p.ReadBool();
+                Player.Strength = p.ReadUShort();
+                Player.Dexterity = p.ReadUShort();
+                Player.Intelligence = p.ReadUShort();
+                Player.OnStaminaChanged(stam: p.ReadUShort(), stamMax: p.ReadUShort());
+                Player.OnManaChanged(mana: p.ReadUShort(), manaMax: p.ReadUShort());
+                Player.Gold = p.ReadUInt();
+                Player.ResistPhysical = p.ReadUShort();
+                Player.Weight = p.ReadUShort();
             }
 
             if (type >= 5)//ML
             {
-                mobile.WeightMax = p.ReadUShort();
+                Player.WeightMax = p.ReadUShort();
                 p.Skip(1);
             }
 
@@ -121,22 +121,43 @@ namespace UOInterface
 
             if (type >= 3)//Renaissance
             {
-                mobile.Followers = p.ReadByte();
-                mobile.FollowersMax = p.ReadByte();
+                Player.Followers = p.ReadByte();
+                Player.FollowersMax = p.ReadByte();
             }
 
             if (type >= 4)//AOS
             {
-                mobile.ResistFire = p.ReadUShort();
-                mobile.ResistCold = p.ReadUShort();
-                mobile.ResistPoison = p.ReadUShort();
-                mobile.ResistEnergy = p.ReadUShort();
-                mobile.Luck = p.ReadUShort();
-                mobile.DamageMin = p.ReadUShort();
-                mobile.DamageMax = p.ReadUShort();
-                mobile.TithingPoints = p.ReadUInt();
+                Player.ResistFire = p.ReadUShort();
+                Player.ResistCold = p.ReadUShort();
+                Player.ResistPoison = p.ReadUShort();
+                Player.ResistEnergy = p.ReadUShort();
+                Player.Luck = p.ReadUShort();
+                Player.DamageMin = p.ReadUShort();
+                Player.DamageMax = p.ReadUShort();
+                Player.TithingPoints = p.ReadUInt();
             }
-            mobile.OnStatusChanged();
+            Player.OnStatsChanged();
+        }
+
+        private static void OnMobileHealthbar(Packet p)//0x17
+        {
+            Mobile mobile = GetMobile(p.ReadUInt());
+            if (!mobile.IsValid)
+                return;
+
+            p.Skip(2);//unknown
+
+            MobileFlags flag;
+            ushort type = p.ReadUShort();
+            if (type == 1)
+                flag = MobileFlags.Poisoned;
+            else if (type == 2)
+                flag = MobileFlags.YellowBar;
+            else
+                return;
+
+            MobileFlags flags = p.ReadBool() ? mobile.Flags | flag : mobile.Flags & ~flag;
+            mobile.OnFlagsChanged(flags);
         }
     }
 }

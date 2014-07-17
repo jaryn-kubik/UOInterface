@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UOInterface.Network;
 
 namespace UOInterface
@@ -8,7 +9,7 @@ namespace UOInterface
         private static void OnLoginConfirm(Packet p)//0x1B
         {
             Clear();
-            Player = GetOrCreateMobile(p.ReadUInt());
+            Player = new PlayerMobile(p.ReadUInt());
             p.Skip(4);//unknown
 
             ushort graphic = p.ReadUShort();
@@ -23,7 +24,8 @@ namespace UOInterface
 
         private static void OnPlayerUpdate(Packet p)//0x20
         {
-            p.Skip(4);//serial - useless since it's always player serial (???)
+            if (p.ReadUInt() != Player)
+                throw new Exception("OnMobileStatus");//does this happen?
             movementQueue.Clear();
 
             Player.OnAppearanceChanged((ushort)(p.ReadUShort() + p.ReadSByte()), p.ReadUShort());

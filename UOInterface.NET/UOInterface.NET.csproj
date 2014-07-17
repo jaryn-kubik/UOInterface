@@ -54,6 +54,7 @@
     <Compile Include="Objects\Mobile.cs" />
     <Compile Include="Network\Packet.cs" />
     <Compile Include="Network\PacketWriter.cs" />
+    <Compile Include="Objects\PlayerMobile.cs" />
     <Compile Include="PacketHandlers\BF.cs" />
     <Compile Include="PacketHandlers\Init.cs" />
     <Compile Include="PacketHandlers\Mobiles.cs" />

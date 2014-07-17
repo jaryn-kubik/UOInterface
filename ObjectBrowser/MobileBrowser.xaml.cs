@@ -27,7 +27,9 @@ namespace ObjectBrowser
                 m.ManaChanged -= Mobile_Changed;
                 m.Moved -= Mobile_Changed;
                 m.StaminaChanged -= Mobile_Changed;
-                m.StatusChanged -= Mobile_Changed;
+                var p = m as PlayerMobile;
+                if (p != null)
+                    p.StatsChanged -= Mobile_Changed;
                 text.Clear();
             }
             foreach (Mobile m in e.AddedItems)
@@ -39,7 +41,9 @@ namespace ObjectBrowser
                 m.ManaChanged += Mobile_Changed;
                 m.Moved += Mobile_Changed;
                 m.StaminaChanged += Mobile_Changed;
-                m.StatusChanged += Mobile_Changed;
+                var p = m as PlayerMobile;
+                if (p != null)
+                    p.StatsChanged += Mobile_Changed;
                 Mobile_Changed(m, EventArgs.Empty);
             }
             e.Handled = true;

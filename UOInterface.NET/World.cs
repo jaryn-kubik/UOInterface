@@ -14,7 +14,7 @@ namespace UOInterface
         public static IEnumerable<Item> Items { get { return items.Select(item => item.Value); } }
         public static IEnumerable<Mobile> Mobiles { get { return mobiles.Select(mobile => mobile.Value); } }
         public static Serial[] Party { get { lock (party) return party.ToArray(); } }
-        public static Mobile Player { get; private set; }
+        public static PlayerMobile Player { get; private set; }
         public static Map Map { get; private set; }
 
         public static event EventHandler<Item> ItemAdded;
@@ -26,13 +26,13 @@ namespace UOInterface
         static World()
         {
             Client.Disconnecting += (s, e) => Clear();
-            Player = Mobile.Invalid;
+            Player = PlayerMobile.Invalid;
             InitHandlers();
         }
 
         private static void Clear()
         {
-            Player = Mobile.Invalid;
+            Player = PlayerMobile.Invalid;
             lock (party)
                 party.Clear();
             items.Clear();

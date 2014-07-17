@@ -27,9 +27,9 @@ namespace UOInterface
             sb.AppendFormat("Hue: {0}\n", Hue);
             if (!string.IsNullOrEmpty(Name))
                 sb.AppendFormat("Name: '{0}'\n", Name);
-            sb.AppendFormat("Position: {0}\n\n", Position);
+            sb.AppendFormat("Position: {0}", Position);
             ToString(sb);
-            return sb.ToString().Trim();
+            return sb.ToString();
         }
 
         public virtual bool IsValid { get { return Serial.IsValid; } }

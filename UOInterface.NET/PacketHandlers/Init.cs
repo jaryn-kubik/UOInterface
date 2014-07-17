@@ -20,6 +20,7 @@ namespace UOInterface
             Handlers.ToClient.Add(0xA2, OnMobileMana, Priority.High);
             Handlers.ToClient.Add(0xA3, OnMobileStamina, Priority.High);
             Handlers.ToClient.Add(0x11, OnMobileStatus, Priority.High);
+            Handlers.ToClient.Add(0x17, OnMobileHealthbar, Priority.High);
 
             //movement
             Handlers.ToServer.Add(0x02, OnMovementRequest, Priority.High);
@@ -32,10 +33,11 @@ namespace UOInterface
             Handlers.ToClient.Add(0x1C, OnAsciiMessage, Priority.High);
             Handlers.ToClient.Add(0xAE, OnUnicodeMessage, Priority.High);
             Handlers.ToClient.Add(0xC1, OnLocalizedMessage, Priority.High);
+            Handlers.ToClient.Add(0xCC, OnLocalizedMessageAffix, Priority.High);
 
             //other
-            Handlers.ToClient.Add(0x4E, OnInfravision, Priority.High);
-            Handlers.ToClient.Add(0x4F, OnGlobalLight, Priority.High);
+            Handlers.ToClient.Add(0x4E, OnPersonalLightLevel, Priority.High);
+            Handlers.ToClient.Add(0x4F, OnGlobalLightLevel, Priority.High);
             Handlers.ToClient.Add(0x1D, OnRemoveObject, Priority.High);
             Handlers.ToClient.Add(0xBF, OnBigFuckingPacket, Priority.High);
         }
