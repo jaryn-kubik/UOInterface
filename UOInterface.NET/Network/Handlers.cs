@@ -43,7 +43,11 @@ namespace UOInterface.Network
             lock (handlers)
                 if (handlers[p.ID] != null)
                     foreach (PacketHandler handler in handlers[p.ID])
+                    {
+                        p.MoveToData();
                         handler.Handler(p);
+                    }
+
             //}
             //catch (Exception ex) { Exception.Raise(ex); }
         }

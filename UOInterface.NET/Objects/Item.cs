@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace UOInterface
 {
@@ -7,17 +8,18 @@ namespace UOInterface
         public new static readonly Item Invalid = new Item(Serial.Invalid);
         internal Item(Serial serial) : base(serial) { }
 
-        public ushort Amount { get; internal set; }
-        public Layer Layer { get; internal set; }
-        public Serial Container { get; internal set; }
-        public bool Opened { get; internal set; }
+        public ushort Amount { get; private set; }
+        public Serial Container { get; private set; }
+        public Layer Layer { get; private set; }
+        //public bool Opened { get; private set; }
 
         protected override void ToString(StringBuilder sb)
         {
+            sb.AppendLine();
             sb.AppendFormat("Amount: {0}\n", Amount);
-            sb.AppendFormat("Layer: {0}\n", Amount);
             sb.AppendFormat("Container: {0}\n", Container);
-            sb.AppendFormat("Opened: {0}\n", Opened);
+            sb.AppendFormat("Layer: {0}", Layer);
+            //sb.AppendFormat("Opened: {0}", Opened);
         }
 
         public override bool IsValid { get { return Serial.IsItem; } }
@@ -36,5 +38,35 @@ namespace UOInterface
                 return item.Container.IsMobile ? item.Container : item;
             }
         }
+
+        #region Events
+        internal void OnAttributesChanged(UOFlags? flags = null, ushort? amount = null)
+        {
+            if ((flags.HasValue && flags != Flags) ||
+                (amount.HasValue && amount != Amount))
+            {
+                if (amount.HasValue)
+                    Amount = amount.Value;
+                base.OnAttributesChanged(flags);
+            }
+        }
+
+        public event EventHandler OwnerChanged;
+        internal void OnOwnerChanged(Serial container, Layer layer = Layer.Invalid)
+        {
+            if (container != Container || layer != Layer)
+            {
+                Container = container;
+                Layer = layer;
+                if (Layer != Layer.Invalid)
+                {
+                    Mobile m = World.GetMobile(Container);
+                    if (m.IsValid)
+                        m.OnLayerChanged(Layer, this);
+                }
+                OwnerChanged.RaiseAsync(this);
+            }
+        }
+        #endregion
     }
 }

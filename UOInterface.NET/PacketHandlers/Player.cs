@@ -29,7 +29,7 @@ namespace UOInterface
             movementQueue.Clear();
 
             Player.OnAppearanceChanged((ushort)(p.ReadUShort() + p.ReadSByte()), p.ReadUShort());
-            Player.OnFlagsChanged((MobileFlags)p.ReadByte());
+            Player.OnAttributesChanged((UOFlags)p.ReadByte());
             ushort x = p.ReadUShort();
             ushort y = p.ReadUShort();
             p.Skip(2);//unknown
@@ -42,7 +42,7 @@ namespace UOInterface
         }
 
         private static void OnWarMode(Packet packet)//0x72
-        { Player.OnFlagsChanged(warMode: packet.ReadBool()); }
+        { Player.OnAttributesChanged(warMode: packet.ReadBool()); }
 
         private static void OnPlayerMoved()
         {

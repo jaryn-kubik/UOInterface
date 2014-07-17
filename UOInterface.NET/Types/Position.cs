@@ -8,7 +8,7 @@ namespace UOInterface
         public ushort Y { get; set; }
         public sbyte Z { get; set; }
 
-        public Position(ushort x, ushort y, sbyte z)
+        public Position(ushort x, ushort y, sbyte z = 0)
             : this()
         {
             X = x;

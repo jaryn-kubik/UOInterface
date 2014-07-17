@@ -43,7 +43,9 @@
   <ItemGroup>
     <Compile Include="Client.cs" />
     <Compile Include="Enums\Layer.cs" />
-    <Compile Include="Enums\Other.cs" />
+    <Compile Include="Enums\Other.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Enums\Skills.cs" />
     <Compile Include="Enums\Speech.cs" />
     <Compile Include="Enums\Spell.cs" />
@@ -55,11 +57,11 @@
     <Compile Include="Network\Packet.cs" />
     <Compile Include="Network\PacketWriter.cs" />
     <Compile Include="Objects\PlayerMobile.cs" />
-    <Compile Include="PacketHandlers\BF.cs" />
     <Compile Include="PacketHandlers\Init.cs" />
+    <Compile Include="PacketHandlers\Items.cs" />
     <Compile Include="PacketHandlers\Mobiles.cs" />
     <Compile Include="PacketHandlers\Movement.cs" />
-    <Compile Include="PacketHandlers\Other.cs" />
+    <Compile Include="PacketHandlers\SHIT.cs" />
     <Compile Include="PacketHandlers\Player.cs" />
     <Compile Include="PacketHandlers\Speech.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

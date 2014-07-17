@@ -11,8 +11,8 @@ namespace UOInterface
         public Serial(uint serial) { value = serial & 0x7FFFFFFF; }
 
         public bool IsMobile { get { return value > 0 && value < 0x40000000; } }
-        public bool IsItem { get { return value >= 0x40000000 && value < 0x80000000; } }
-        public bool IsValid { get { return value > 0 && value < 0x80000000; } }
+        public bool IsItem { get { return value >= 0x40000000 && value < 0x7FFFFFFF; } }
+        public bool IsValid { get { return value > 0 && value < 0x7FFFFFFF; } }
 
         public static implicit operator Serial(uint value) { return new Serial(value); }
         public static implicit operator uint(Serial serial) { return serial.value; }

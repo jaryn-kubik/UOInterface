@@ -11,7 +11,7 @@ namespace UOInterface
             ushort g = p.ReadUShort();
             mobile.OnMoved(new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte()), (Direction)p.ReadByte());
             mobile.OnAppearanceChanged(g, p.ReadUShort());
-            mobile.OnFlagsChanged((MobileFlags)p.ReadByte(), (Notoriety)p.ReadByte());
+            mobile.OnAttributesChanged((UOFlags)p.ReadByte(), (Notoriety)p.ReadByte());
             AddMobile(mobile);
         }
 
@@ -21,7 +21,7 @@ namespace UOInterface
             ushort g = p.ReadUShort();
             mobile.OnMoved(new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte()), (Direction)p.ReadByte());
             mobile.OnAppearanceChanged(g, p.ReadUShort());
-            mobile.OnFlagsChanged((MobileFlags)p.ReadByte(), (Notoriety)p.ReadByte());
+            mobile.OnAttributesChanged((UOFlags)p.ReadByte(), (Notoriety)p.ReadByte());
 
             uint itemSerial;
             while ((itemSerial = p.ReadUInt()) != 0)
@@ -42,8 +42,7 @@ namespace UOInterface
                 }
 
                 item.OnAppearanceChanged(graphic, hue);
-                item.Layer = layer;
-                item.Container = mobile.Serial;
+                item.OnOwnerChanged(mobile.Serial, layer);
                 mobile.OnLayerChanged(layer, item.Serial);
                 AddItem(item);
             }
@@ -147,17 +146,17 @@ namespace UOInterface
 
             p.Skip(2);//unknown
 
-            MobileFlags flag;
+            UOFlags flag;
             ushort type = p.ReadUShort();
             if (type == 1)
-                flag = MobileFlags.Poisoned;
+                flag = UOFlags.Poisoned;
             else if (type == 2)
-                flag = MobileFlags.YellowBar;
+                flag = UOFlags.YellowBar;
             else
                 return;
 
-            MobileFlags flags = p.ReadBool() ? mobile.Flags | flag : mobile.Flags & ~flag;
-            mobile.OnFlagsChanged(flags);
+            UOFlags flags = p.ReadBool() ? mobile.Flags | flag : mobile.Flags & ~flag;
+            mobile.OnAttributesChanged(flags);
         }
     }
 }

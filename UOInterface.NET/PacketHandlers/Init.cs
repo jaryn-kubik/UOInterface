@@ -22,6 +22,12 @@ namespace UOInterface
             Handlers.ToClient.Add(0x11, OnMobileStatus, Priority.High);
             Handlers.ToClient.Add(0x17, OnMobileHealthbar, Priority.High);
 
+            //items
+            Handlers.ToClient.Add(0x1A, OnWorldItem, Priority.High);
+            Handlers.ToClient.Add(0x25, OnContainerContentUpdate, Priority.High);
+            Handlers.ToClient.Add(0x3C, OnContainerContent, Priority.High);
+            Handlers.ToClient.Add(0x2E, OnEquipUpdate, Priority.High);
+
             //movement
             Handlers.ToServer.Add(0x02, OnMovementRequest, Priority.High);
             Handlers.ToServer.Add(0x22, OnResyncRequest, Priority.High);

@@ -27,7 +27,7 @@ namespace UOInterface
 
         private static void OnMovementAccepted(Packet p)//0x22
         {
-            Player.OnFlagsChanged(notoriety: (Notoriety)p.ReadByte(2));
+            Player.OnAttributesChanged(notoriety: (Notoriety)p.ReadByte(2));
             ProcessMove(movementQueue.Dequeue());
         }
 

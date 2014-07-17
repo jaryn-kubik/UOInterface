@@ -20,11 +20,9 @@ namespace UOInterface.Network
             this.data = data;
             Length = len;
             Dynamic = Client.GetPacketLength(ID) < 0;
-            Position = Dynamic ? 3 : 1;
         }
 
         public void MoveToData() { EnsureSize(Dynamic ? 3 : 1, 0); }
-        public void MoveToEnd() { EnsureSize(Length, 0); }
         public void Skip(byte length) { EnsureSize(Position, length); }
         public void Seek(int index) { EnsureSize(index, 0); }
 

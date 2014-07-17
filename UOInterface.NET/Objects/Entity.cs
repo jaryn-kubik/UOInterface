@@ -12,7 +12,9 @@ namespace UOInterface
         public Graphic Graphic { get; private set; }
         public Hue Hue { get; private set; }
         public string Name { get; private set; }
-        public Position Position { get; protected set; }
+        public Position Position { get; private set; }
+        public Direction Direction { get; private set; }
+        public UOFlags Flags { get; private set; }
 
         public static implicit operator Serial(Entity entity) { return entity.Serial; }
         public static implicit operator uint(Entity entity) { return entity.Serial; }
@@ -27,7 +29,9 @@ namespace UOInterface
             sb.AppendFormat("Hue: {0}\n", Hue);
             if (!string.IsNullOrEmpty(Name))
                 sb.AppendFormat("Name: '{0}'\n", Name);
-            sb.AppendFormat("Position: {0}", Position);
+            sb.AppendFormat("Position: {0}\n", Position);
+            sb.AppendFormat("Direction: {0}\n", Direction);
+            sb.AppendFormat("Flags: {0}", Flags);
             ToString(sb);
             return sb.ToString();
         }
@@ -54,6 +58,26 @@ namespace UOInterface
                     Name = name;
                 AppearanceChanged.RaiseAsync(this);
             }
+        }
+
+        public event EventHandler Moved;
+        internal void OnMoved(Position position, Direction dir = 0)
+        {
+            dir &= ~Direction.Running;
+            if (position != Position || dir != Direction)
+            {
+                Position = position;
+                Direction = dir;
+                Moved.RaiseAsync(this);
+            }
+        }
+
+        public event EventHandler AttributesChanged;
+        protected void OnAttributesChanged(UOFlags? flags)
+        {
+            if (flags.HasValue)
+                Flags = flags.Value;
+            AttributesChanged.RaiseAsync(this);
         }
         #endregion
     }

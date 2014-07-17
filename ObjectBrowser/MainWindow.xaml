@@ -11,5 +11,8 @@
         <TabItem Header="Mobiles">
             <objectBrowser:MobileBrowser></objectBrowser:MobileBrowser>
         </TabItem>
+        <TabItem Header="Items">
+            <objectBrowser:ItemBrowser></objectBrowser:ItemBrowser>
+        </TabItem>
     </TabControl>
 </Window>

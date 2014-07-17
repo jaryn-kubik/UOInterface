@@ -15,8 +15,6 @@ namespace UOInterface
         public ushort Stamina { get; private set; }
         public ushort StaminaMax { get; private set; }
 
-        public MobileFlags Flags { get; private set; }
-        public Direction Direction { get; private set; }
         public Notoriety Notoriety { get; private set; }
         public bool WarMode { get; private set; }
         public bool Renamable { get; private set; }
@@ -34,31 +32,17 @@ namespace UOInterface
             sb.AppendFormat("Mana: {0}/{1}\n", Mana, ManaMax);
             sb.AppendFormat("Stam: {0}/{1}\n", Stamina, StaminaMax);
             sb.AppendLine();
-            sb.AppendFormat("Flags: {0}\n", Flags);
-            sb.AppendFormat("Direction: {0}\n", Direction);
             sb.AppendFormat("Notoriety: {0}\n", Notoriety);
             sb.AppendFormat("WarMode: {0}\n", WarMode);
             sb.AppendFormat("Renamable: {0}", Renamable);
         }
 
-        public bool YellowBar { get { return Flags.HasFlag(MobileFlags.YellowBar); } }
-        public bool Poisoned { get { return Flags.HasFlag(MobileFlags.Poisoned); } }
-        public bool Hidden { get { return Flags.HasFlag(MobileFlags.Hidden); } }
+        public bool YellowBar { get { return Flags.HasFlag(UOFlags.YellowBar); } }
+        public bool Poisoned { get { return Flags.HasFlag(UOFlags.Poisoned); } }
+        public bool Hidden { get { return Flags.HasFlag(UOFlags.Hidden); } }
         public bool InParty { get { return World.IsInParty(Serial); } }
 
         #region Events
-        public event EventHandler Moved;
-        internal void OnMoved(Position position, Direction dir)
-        {
-            dir &= ~Direction.Running;
-            if (position != Position || dir != Direction)
-            {
-                Position = position;
-                Direction = dir;
-                Moved.RaiseAsync(this);
-            }
-        }
-
         public event EventHandler HitsChanged;
         internal void OnHitsChanged(ushort hitsMax, ushort hits)
         {
@@ -92,20 +76,17 @@ namespace UOInterface
             }
         }
 
-        public event EventHandler FlagsChanged;
-        internal void OnFlagsChanged(MobileFlags? flags = null, Notoriety? notoriety = null, bool? warMode = null)
+        internal void OnAttributesChanged(UOFlags? flags = null, Notoriety? notoriety = null, bool? warMode = null)
         {
             if ((flags.HasValue && flags != Flags) ||
                 (notoriety.HasValue && notoriety != Notoriety) ||
                 (warMode.HasValue && warMode != WarMode))
             {
-                if (flags.HasValue)
-                    Flags = flags.Value;
                 if (notoriety.HasValue)
                     Notoriety = notoriety.Value;
                 if (warMode.HasValue)
                     WarMode = warMode.Value;
-                FlagsChanged.RaiseAsync(this);
+                base.OnAttributesChanged(flags);
             }
         }
 
@@ -114,7 +95,7 @@ namespace UOInterface
             if (renamable != Renamable)
             {
                 Renamable = renamable;
-                FlagsChanged.RaiseAsync(this);
+                base.OnAttributesChanged(null);
             }
         }
 

@@ -21,7 +21,7 @@ namespace ObjectBrowser
             foreach (Mobile m in e.RemovedItems)
             {
                 m.AppearanceChanged -= Mobile_Changed;
-                m.FlagsChanged -= Mobile_Changed;
+                m.AttributesChanged -= Mobile_Changed;
                 m.HitsChanged -= Mobile_Changed;
                 m.LayerChanged -= Mobile_Changed;
                 m.ManaChanged -= Mobile_Changed;
@@ -35,7 +35,7 @@ namespace ObjectBrowser
             foreach (Mobile m in e.AddedItems)
             {
                 m.AppearanceChanged += Mobile_Changed;
-                m.FlagsChanged += Mobile_Changed;
+                m.AttributesChanged += Mobile_Changed;
                 m.HitsChanged += Mobile_Changed;
                 m.LayerChanged += Mobile_Changed;
                 m.ManaChanged += Mobile_Changed;
