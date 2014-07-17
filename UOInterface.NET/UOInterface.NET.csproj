@@ -61,7 +61,7 @@
     <Compile Include="PacketHandlers\Items.cs" />
     <Compile Include="PacketHandlers\Mobiles.cs" />
     <Compile Include="PacketHandlers\Movement.cs" />
-    <Compile Include="PacketHandlers\SHIT.cs" />
+    <Compile Include="PacketHandlers\Other.cs" />
     <Compile Include="PacketHandlers\Player.cs" />
     <Compile Include="PacketHandlers\Speech.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
