@@ -160,7 +160,7 @@ void ErrorCheck()
 
 bool SevenSingleCheck()
 {
-	unsigned char sig[] = { 0x83, 0xC4, 0x04, 0x33, 0xED, 0x55, 0x50, 0xFF, 0x15 };
+	byte sig[] = { 0x83, 0xC4, 0x04, 0x33, 0xED, 0x55, 0x50, 0xFF, 0x15 };
 	byte *offset;
 	if (FindCode(sig, sizeof(sig), &offset))
 	{
@@ -178,5 +178,38 @@ void PatchMulti()
 		SingleCheck();
 		if (!TripleCheck())
 			DoubleCheck();
+	}
+}
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+void PatchIntro()
+{
+	byte intro[] = "intro.bik";
+	byte osilogo[] = "osilogo.bik";
+	byte splash[] = "Splash gump";
+
+	byte *offset;
+	if (FindData(intro, sizeof(intro), &offset))
+		SetByte(offset, '_');
+
+	if (FindData(osilogo, sizeof(osilogo), &offset))
+		SetByte(offset, '_');
+
+	if (FindData(splash, sizeof(splash), &offset))
+	{
+		//mov		dword ptr [esi+8], offset aSplashGump ; "Splash gump"
+		byte sig[] = { 0xC7, 0x46, 0x08, 0x00, 0x00, 0x00, 0x00 };
+		*(UINT*)(sig + 3) = (UINT)offset;
+
+		if (FindCode(sig, sizeof(sig), &offset))
+		{
+			//xor eax, eax
+			SetByte(offset + 0x30, 0x33);
+			SetByte(offset + 0x30 + 1, 0xC0);
+			//xor eax, eax
+			SetByte(offset + 0x30 + 2, 0x33);
+			SetByte(offset + 0x30 + 3, 0xC0);
+		}
 	}
 }

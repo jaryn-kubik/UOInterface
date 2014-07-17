@@ -12,8 +12,8 @@ enum struct UOMessage
 	First = WM_USER,
 	Init = First, Connected, Disconnecting, Closing, Focus, Visibility,
 	KeyDown, PacketToClient, PacketToServer,
-	ConnectionInfo, Pathfinding, Patch,
-	Last = Patch
+	ConnectionInfo, Pathfinding, PatchEncryption,
+	Last = PatchEncryption
 };
 typedef UINT(*OnUOMessage)(UOMessage msg, int wParam, int lParam);
 

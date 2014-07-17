@@ -8,7 +8,6 @@ namespace UOInterface
     public static class Client
     {
         public static bool PatchEncryption { get; set; }
-        public static bool PatchMulti { get; set; }
         public static uint ServerIP { get; set; }
         public static ushort ServerPort { get; set; }
         public static Version Version { get; private set; }
@@ -71,7 +70,7 @@ namespace UOInterface
             {
                 case UOMessage.Init:
                     SendUOMessage(UOMessage.ConnectionInfo, (int)ServerIP, ServerPort);
-                    SendUOMessage(UOMessage.Patch, PatchEncryption ? 1 : 0, PatchMulti ? 1 : 0);
+                    SendUOMessage(UOMessage.PatchEncryption);
                     break;
 
                 case UOMessage.Connected:
@@ -144,7 +143,7 @@ namespace UOInterface
         {
             Init = 0x0400, Connected, Disconnecting, Closing, Focus, Visibility,
             KeyDown, PacketToClient, PacketToServer,
-            ConnectionInfo, Pathfinding, Patch
+            ConnectionInfo, Pathfinding, PatchEncryption
         }
         #endregion
     }

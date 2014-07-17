@@ -12,7 +12,7 @@ namespace PacketLogger
         {
             Client.ServerIP = 0x0100007F;//127.0.0.1
             Client.ServerPort = 2593;
-            Client.PatchEncryption = Client.PatchMulti = true;
+            Client.PatchEncryption = true;
 
             Client.Connected += (s, e) => Console.WriteLine("Connected");
             Client.Disconnecting += (s, e) => Console.WriteLine("Disconnecting");

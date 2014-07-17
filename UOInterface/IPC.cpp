@@ -64,11 +64,8 @@ LRESULT RecvIPCMessage(UOMessage msg, WPARAM wParam, LPARAM lParam)
 	case UOMessage::Pathfinding:
 		Pathfind(HIWORD(wParam), LOWORD(wParam), LOWORD(lParam));
 		break;
-	case UOMessage::Patch:
-		if (wParam)
-			PatchEncryption();
-		if (lParam)
-			PatchMulti();
+	case UOMessage::PatchEncryption:
+		PatchEncryption();
 		break;
 	default:
 		break;

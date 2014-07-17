@@ -4,6 +4,7 @@
 #include "PacketHooks.h"
 #include "IPC.h"
 #include "Macros.h"
+#include "Patches.h"
 #include <thread>
 #include <future>
 
@@ -22,6 +23,8 @@ DWORD WINAPI Init(LPVOID hwnd)
 		HookImports();
 		HookPackets();
 		InitMacros();
+		PatchMulti();
+		PatchIntro();
 		return (DWORD)handle;
 	}
 	catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Init", MB_ICONERROR | MB_OK); }
