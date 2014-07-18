@@ -25,7 +25,7 @@ namespace ObjectBrowser
                 m.HitsChanged -= Mobile_Changed;
                 m.LayerChanged -= Mobile_Changed;
                 m.ManaChanged -= Mobile_Changed;
-                m.Moved -= Mobile_Changed;
+                m.PositionChanged -= Mobile_Changed;
                 m.StaminaChanged -= Mobile_Changed;
                 var p = m as PlayerMobile;
                 if (p != null)
@@ -39,7 +39,7 @@ namespace ObjectBrowser
                 m.HitsChanged += Mobile_Changed;
                 m.LayerChanged += Mobile_Changed;
                 m.ManaChanged += Mobile_Changed;
-                m.Moved += Mobile_Changed;
+                m.PositionChanged += Mobile_Changed;
                 m.StaminaChanged += Mobile_Changed;
                 var p = m as PlayerMobile;
                 if (p != null)

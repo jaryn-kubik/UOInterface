@@ -12,13 +12,16 @@ namespace UOInterface
             Player = new PlayerMobile(p.ReadUInt());
             p.Skip(4);//unknown
 
-            ushort graphic = p.ReadUShort();
-            Player.OnMoved(new Position(p.ReadUShort(), p.ReadUShort(), (sbyte)p.ReadUShort()), (Direction)p.ReadByte());
-            Player.OnAppearanceChanged(graphic, 0);
-            //p.Skip(9);//unknown
-            //p.ReadUShort();//map width
-            //p.ReadUShort();//map height
-
+            lock (Player.SyncRoot)
+            {
+                Player.Graphic = p.ReadUShort();
+                Player.Position = new Position(p.ReadUShort(), p.ReadUShort(), (sbyte)p.ReadUShort());
+                Player.Direction = (Direction)p.ReadByte();
+                //p.Skip(9);//unknown
+                //p.ReadUShort();//map width
+                //p.ReadUShort();//map height
+            }
+            Player.ProcessDelta();
             AddMobile(Player);
         }
 
@@ -28,21 +31,25 @@ namespace UOInterface
                 throw new Exception("OnMobileStatus");//does this happen?
             movementQueue.Clear();
 
-            Player.OnAppearanceChanged((ushort)(p.ReadUShort() + p.ReadSByte()), p.ReadUShort());
-            Player.OnAttributesChanged((UOFlags)p.ReadByte());
-            ushort x = p.ReadUShort();
-            ushort y = p.ReadUShort();
-            p.Skip(2);//unknown
-            Direction dir = (Direction)p.ReadByte();
-            sbyte z = p.ReadSByte();
+            lock (Player.SyncRoot)
+            {
+                Player.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+                Player.Hue = p.ReadUShort();
+                Player.Flags = (UOFlags)p.ReadByte();
 
-            Player.OnMoved(new Position(x, y, z), dir);
+                ushort x = p.ReadUShort();
+                ushort y = p.ReadUShort();
+                p.Skip(2);//unknown
+                Player.Direction = (Direction)p.ReadByte();
+                Player.Position = new Position(x, y, p.ReadSByte());
+            }
             OnPlayerMoved();
+            Player.ProcessDelta();
             AddMobile(Player);
         }
 
         private static void OnWarMode(Packet packet)//0x72
-        { Player.OnAttributesChanged(warMode: packet.ReadBool()); }
+        { Player.WarMode = packet.ReadBool(); }
 
         private static void OnPlayerMoved()
         {

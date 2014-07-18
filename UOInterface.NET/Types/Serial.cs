@@ -18,6 +18,8 @@ namespace UOInterface
         public static implicit operator uint(Serial serial) { return serial.value; }
         public static bool operator ==(Serial s1, Serial s2) { return s1.value == s2.value; }
         public static bool operator !=(Serial s1, Serial s2) { return s1.value != s2.value; }
+        public static bool operator <(Serial s1, Serial s2) { return s1.value < s2.value; }
+        public static bool operator >(Serial s1, Serial s2) { return s1.value > s2.value; }
 
         public int CompareTo(object obj) { return value.CompareTo(obj); }
         public int CompareTo(uint other) { return value.CompareTo(other); }

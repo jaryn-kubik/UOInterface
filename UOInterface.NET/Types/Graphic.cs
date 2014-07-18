@@ -8,7 +8,7 @@ namespace UOInterface
         public const ushort Invariant = ushort.MaxValue;
 
         private readonly ushort value;
-        public Graphic(ushort Graphic) { value = Graphic; }
+        public Graphic(ushort graphic) { value = graphic; }
 
         public bool IsInvariant { get { return value == Invariant; } }
 
@@ -16,6 +16,8 @@ namespace UOInterface
         public static implicit operator ushort(Graphic color) { return color.value; }
         public static bool operator ==(Graphic g1, Graphic g2) { return g1.IsInvariant || g2.IsInvariant || g1.value == g2.value; }
         public static bool operator !=(Graphic g1, Graphic g2) { return !g1.IsInvariant && !g2.IsInvariant && g1.value != g2.value; }
+        public static bool operator <(Graphic g1, Graphic g2) { return g1.value < g2.value; }
+        public static bool operator >(Graphic g1, Graphic g2) { return g1.value > g2.value; }
 
         public int CompareTo(object obj) { return value.CompareTo(obj); }
         public int CompareTo(ushort other) { return value.CompareTo(other); }

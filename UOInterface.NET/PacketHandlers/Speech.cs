@@ -9,9 +9,13 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)//server?
                 return;
-            ushort graphic = p.ReadUShort();
-            p.Skip(5);
-            mobile.OnAppearanceChanged(graphic, name: p.ReadStringAscii(30));
+            lock (mobile.SyncRoot)
+            {
+                mobile.Graphic = p.ReadUShort();
+                p.Skip(5);
+                mobile.Name = p.ReadStringAscii(30);
+            }
+            mobile.ProcessDelta();
             AddMobile(mobile);
         }
 
@@ -20,9 +24,13 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)//server?
                 return;
-            ushort graphic = p.ReadUShort();
-            p.Skip(9);
-            mobile.OnAppearanceChanged(graphic, name: p.ReadStringAscii(30));
+            lock (mobile.SyncRoot)
+            {
+                mobile.Graphic = p.ReadUShort();
+                p.Skip(9);
+                mobile.Name = p.ReadStringAscii(30);
+            }
+            mobile.ProcessDelta();
             AddMobile(mobile);
         }
 
@@ -31,9 +39,13 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)//server?
                 return;
-            ushort graphic = p.ReadUShort();
-            p.Skip(9);
-            mobile.OnAppearanceChanged(graphic, name: p.ReadStringAscii(30));
+            lock (mobile.SyncRoot)
+            {
+                mobile.Graphic = p.ReadUShort();
+                p.Skip(9);
+                mobile.Name = p.ReadStringAscii(30);
+            }
+            mobile.ProcessDelta();
             AddMobile(mobile);
         }
 
@@ -42,9 +54,13 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)//server?
                 return;
-            ushort graphic = p.ReadUShort();
-            p.Skip(10);
-            mobile.OnAppearanceChanged(graphic, name: p.ReadStringAscii(30));
+            lock (mobile.SyncRoot)
+            {
+                mobile.Graphic = p.ReadUShort();
+                p.Skip(10);
+                mobile.Name = p.ReadStringAscii(30);
+            }
+            mobile.ProcessDelta();
             AddMobile(mobile);
         }
     }

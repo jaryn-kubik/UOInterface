@@ -113,7 +113,7 @@ namespace UOInterface
                     MobileRemoved.RaiseAsync(mobile);
             }
             else
-                throw new ArgumentException("serial");
+                throw new ArgumentException("Remove with invalid serial.", "serial");
             foreach (Serial s in GetContainerContents(serial))
                 Remove(s);
         }

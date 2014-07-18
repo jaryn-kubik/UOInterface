@@ -9,53 +9,53 @@ namespace UOInterface
         {
             uint serial = p.ReadUInt();
             Item item = GetOrCreateItem(serial);
-            ushort graphic = (ushort)(p.ReadUShort() & 0x3FFF);
-            ushort amount = 1;
+            lock (item.SyncRoot)
+            {
+                ushort graphic = (ushort)(p.ReadUShort() & 0x3FFF);
 
-            if ((serial & 0x80000000) != 0)
-                amount = p.ReadUShort();
+                if ((serial & 0x80000000) != 0)
+                    item.Amount = p.ReadUShort();
+                else
+                    item.Amount = 1;
 
-            if ((graphic & 0x8000) != 0)
-                graphic = (ushort)(graphic & 0x7FFF + p.ReadSByte());
-            else
-                graphic = (ushort)(graphic & 0x7FFF);
+                if ((graphic & 0x8000) != 0)
+                    item.Graphic = (ushort)(graphic & 0x7FFF + p.ReadSByte());
+                else
+                    item.Graphic = (ushort)(graphic & 0x7FFF);
 
-            ushort x = p.ReadUShort();
-            ushort y = p.ReadUShort();
-            Direction dir = 0;
+                ushort x = p.ReadUShort();
+                ushort y = p.ReadUShort();
 
-            if ((x & 0x8000) != 0)
-                dir = (Direction)p.ReadByte();//wtf???
+                if ((x & 0x8000) != 0)
+                    item.Direction = (Direction)p.ReadByte();//wtf???
 
-            sbyte z = p.ReadSByte();
-            ushort hue = 0;
-            if ((y & 0x8000) != 0)
-                hue = p.ReadUShort();
+                item.Position = new Position((ushort)(x & 0x7FFF), (ushort)(y & 0x3FFF), p.ReadSByte());
 
-            UOFlags flags = 0;
-            if ((y & 0x4000) != 0)
-                flags = (UOFlags)p.ReadByte();
+                if ((y & 0x8000) != 0)
+                    item.Hue = p.ReadUShort();
 
-            item.OnAppearanceChanged(graphic, hue);
-            item.OnAttributesChanged(flags, amount);
-            item.OnMoved(new Position((ushort)(x & 0x7FFF), (ushort)(y & 0x3FFF), z), dir);
-            item.OnOwnerChanged(Serial.Invalid);
+                if ((y & 0x4000) != 0)
+                    item.Flags = (UOFlags)p.ReadByte();
+            }
+            item.ProcessDelta();
             AddItem(item);
         }
 
         private static void OnContainerContentUpdate(Packet p)//0x25
         {
             Item item = GetOrCreateItem(p.ReadUInt());
-            ushort graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+            lock (item.SyncRoot)
+            {
+                item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+                item.Amount = Math.Max(p.ReadUShort(), (ushort)1);
+                item.Position = new Position(p.ReadUShort(), p.ReadUShort());
+                if (usePostKRPackets.Value)
+                    p.ReadByte(); //useless?
 
-            item.OnAttributesChanged(amount: Math.Max(p.ReadUShort(), (ushort)1));
-            item.OnMoved(new Position(p.ReadUShort(), p.ReadUShort()));
-
-            if (usePostKRPackets.Value)
-                p.ReadByte(); //useless?
-
-            item.OnOwnerChanged(p.ReadUInt());
-            item.OnAppearanceChanged(graphic, p.ReadUShort());
+                item.Container = p.ReadUInt();
+                item.Hue = p.ReadUShort();
+            }
+            item.ProcessDelta();
             AddItem(item);
         }
 
@@ -69,10 +69,21 @@ namespace UOInterface
         private static void OnEquipUpdate(Packet p)//0x2E
         {
             Item item = GetOrCreateItem(p.ReadUInt());
-            ushort graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
-            Layer layer = (Layer)p.ReadByte();
-            item.OnOwnerChanged(p.ReadUInt(), layer);
-            item.OnAppearanceChanged(graphic, p.ReadUShort());
+            lock (item.SyncRoot)
+            {
+                item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+                item.Layer = (Layer)p.ReadByte();
+                item.Container = p.ReadUInt();
+                item.Hue = p.ReadUShort();
+
+                Mobile m = GetMobile(item.Container);
+                if (m.IsValid)
+                {
+                    m[item.Layer] = item;
+                    m.ProcessDelta();
+                }
+            }
+            item.ProcessDelta();
             AddItem(item);
         }
     }

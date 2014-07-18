@@ -22,7 +22,7 @@ namespace ObjectBrowser
             {
                 i.AppearanceChanged += Item_Changed;
                 i.AttributesChanged += Item_Changed;
-                i.Moved += Item_Changed;
+                i.PositionChanged += Item_Changed;
                 i.OwnerChanged += Item_Changed;
                 text.Clear();
             }
@@ -30,7 +30,7 @@ namespace ObjectBrowser
             {
                 i.AppearanceChanged -= Item_Changed;
                 i.AttributesChanged -= Item_Changed;
-                i.Moved -= Item_Changed;
+                i.PositionChanged -= Item_Changed;
                 i.OwnerChanged -= Item_Changed;
                 Item_Changed(i, EventArgs.Empty);
             }

@@ -16,6 +16,8 @@ namespace UOInterface
         public static implicit operator ushort(Hue color) { return color.value; }
         public static bool operator ==(Hue h1, Hue h2) { return h1.IsInvariant || h2.IsInvariant || h1.value == h2.value; }
         public static bool operator !=(Hue h1, Hue h2) { return !h1.IsInvariant && !h2.IsInvariant && h1.value != h2.value; }
+        public static bool operator <(Hue h1, Hue h2) { return h1.value < h2.value; }
+        public static bool operator >(Hue h1, Hue h2) { return h1.value > h2.value; }
 
         public int CompareTo(object obj) { return value.CompareTo(obj); }
         public int CompareTo(ushort other) { return value.CompareTo(other); }

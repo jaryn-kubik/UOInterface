@@ -17,30 +17,39 @@ namespace UOInterface
         {
             movementQueue.Clear();
 
-            ushort x = p.ReadUShort(2);
-            ushort y = p.ReadUShort();
-            Direction dir = (Direction)p.ReadByte();
-            sbyte z = p.ReadSByte();
-
-            Player.OnMoved(new Position(x, y, z), dir);
+            lock (Player.SyncRoot)
+            {
+                ushort x = p.ReadUShort(2);
+                ushort y = p.ReadUShort();
+                Player.Direction = (Direction)p.ReadByte();
+                Player.Position = new Position(x, y, p.ReadSByte());
+            }
+            Player.ProcessDelta();
         }
 
         private static void OnMovementAccepted(Packet p)//0x22
         {
-            Player.OnAttributesChanged(notoriety: (Notoriety)p.ReadByte(2));
-            ProcessMove(movementQueue.Dequeue());
+            lock (Player.SyncRoot)
+            {
+                Player.Notoriety = (Notoriety)p.ReadByte(2);
+                ProcessMove(movementQueue.Dequeue());
+            }
+            Player.ProcessDelta();
         }
 
-        private static void OnMovementDemand(Packet p)//0x97
-        { ProcessMove((Direction)p.ReadByte()); }
+        private static void OnMovementDemand(Packet p) //0x97
+        {
+            lock (Player.SyncRoot)
+                ProcessMove((Direction)p.ReadByte());
+            Player.ProcessDelta();
+        }
 
         private static void ProcessMove(Direction dir)
         {
             dir &= ~Direction.Running;
-            bool moved = dir == Player.Direction;
-            if (!moved)
+            if (dir != Player.Direction)
             {
-                Player.OnMoved(Player.Position, dir);
+                Player.Direction = dir;
                 return;
             }
             Position p = Player.Position;
@@ -77,7 +86,7 @@ namespace UOInterface
                     x--;
                     break;
             }
-            Player.OnMoved(new Position(x, y, p.Z), dir);
+            Player.Position = new Position(x, y, p.Z);
             OnPlayerMoved();
         }
     }
