@@ -41,7 +41,7 @@ namespace PacketLogger
         {
             Console.Write("PacketToClient");
             WritePacket(p);
-            if (p.ID == 0xAE)
+            if (p.Id == 0xAE)
                 //duplicate recieved chat messages - just for fun (and for testing if it really works...)
                 Client.SendToClient(p.ToArray());
         }
@@ -50,14 +50,14 @@ namespace PacketLogger
         {
             Console.Write("PacketToServer");
             WritePacket(p);
-            if (p.ID == 0xAD)
+            if (p.Id == 0xAD)
                 //duplicate sent chat messages - just for fun (and for testing if it really works...)
                 Client.SendToServer(p.ToArray());
         }
 
         private static void WritePacket(Packet packet)
         {
-            Console.WriteLine("\t\t {0:X2} - {1} bytes", packet.ID, packet.Length);
+            Console.WriteLine("\t\t {0:X2} - {1} bytes", packet.Id, packet.Length);
             Console.WriteLine(" 0  1  2  3  4  5  6  7   8  9  A  B  C  D  E  F");
             Console.WriteLine("-- -- -- -- -- -- -- --  -- -- -- -- -- -- -- --");
 

@@ -8,7 +8,7 @@ namespace UOInterface.Network
     {
         private readonly byte* data;
 
-        public byte ID { get { return data[0]; } }
+        public byte Id { get { return data[0]; } }
         public bool Dynamic { get; private set; }
         public int Length { get; private set; }
         public int Position { get; private set; }
@@ -19,7 +19,7 @@ namespace UOInterface.Network
         {
             this.data = data;
             Length = len;
-            Dynamic = Client.GetPacketLength(ID) < 0;
+            Dynamic = Client.GetPacketLength(Id) < 0;
         }
 
         public void MoveToData() { EnsureSize(Dynamic ? 3 : 1, 0); }

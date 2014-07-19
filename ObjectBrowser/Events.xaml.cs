@@ -40,9 +40,9 @@ namespace ObjectBrowser
         }
 
         private void Client_PacketToClient(object sender, Packet p)
-        { AppendLine(string.Format("PacketToClient - {0:X2} - {1} bytes", p.ID, p.Length)); }
+        { AppendLine(string.Format("PacketToClient - {0:X2} - {1} bytes", p.Id, p.Length)); }
 
         private void Client_PacketToServer(object sender, Packet p)
-        { AppendLine(string.Format("PacketToServer - {0:X2} - {1} bytes", p.ID, p.Length)); }
+        { AppendLine(string.Format("PacketToServer - {0:X2} - {1} bytes", p.Id, p.Length)); }
     }
 }

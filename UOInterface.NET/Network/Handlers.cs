@@ -41,8 +41,8 @@ namespace UOInterface.Network
             //try
             //{
             lock (handlers)
-                if (handlers[p.ID] != null)
-                    foreach (PacketHandler handler in handlers[p.ID])
+                if (handlers[p.Id] != null)
+                    foreach (PacketHandler handler in handlers[p.Id])
                     {
                         p.MoveToData();
                         handler.Handler(p);
@@ -63,7 +63,13 @@ namespace UOInterface.Network
                 Handler = handler;
             }
 
-            public int CompareTo(PacketHandler other) { return priority.CompareTo(other.priority); }
+            public int CompareTo(PacketHandler other)
+            {
+                if (Handler == other.Handler)
+                    return 0;
+                int res = priority.CompareTo(other.priority);
+                return res == 0 ? 1 : res;
+            }
         }
     }
 }
