@@ -1,10 +1,61 @@
 ﻿using System;
+using System.Collections.Generic;
 using UOInterface.Network;
 
 namespace UOInterface
 {
     public static partial class World
     {
+        //sometimes child items are sent before parent containers...
+        //no idea why, they like to make things complicated i guess
+        private static readonly HashSet<Item> toUpdate = new HashSet<Item>();
+        private static void ReadContainerContent(Packet p)
+        {
+            Item item = GetOrCreateItem(p.ReadUInt());
+            lock (item.SyncRoot)
+            {
+                item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+                item.Amount = Math.Max(p.ReadUShort(), (ushort)1);
+                item.Position = new Position(p.ReadUShort(), p.ReadUShort());
+                if (usePostKRPackets.Value)
+                    p.ReadByte(); //gridnumber - useless?
+
+                item.Container = p.ReadUInt();
+                item.Hue = p.ReadUShort();
+            }
+            item.ProcessDelta();
+            toUpdate.Add(item);
+        }
+
+        private static void OnContainerContentUpdate(Packet p)//0x25
+        {
+            ReadContainerContent(p);
+            ProcessDelta();
+        }
+
+        private static void OnContainerContent(Packet p)//0x3C
+        {
+            ushort count = p.ReadUShort();
+            for (int i = 0; i < count; i++)
+                ReadContainerContent(p);
+            ProcessDelta();
+        }
+
+        private static void OnEquipUpdate(Packet p)//0x2E
+        {
+            Item item = GetOrCreateItem(p.ReadUInt());
+            lock (item.SyncRoot)
+            {
+                item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+                item.Layer = (Layer)p.ReadByte();
+                item.Container = p.ReadUInt();
+                item.Hue = p.ReadUShort();
+            }
+            item.ProcessDelta();
+            toUpdate.Add(item);
+            ProcessDelta();
+        }
+
         private static void OnWorldItem(Packet p)//0x1A
         {
             uint serial = p.ReadUInt();
@@ -12,11 +63,7 @@ namespace UOInterface
             lock (item.SyncRoot)
             {
                 ushort graphic = (ushort)(p.ReadUShort() & 0x3FFF);
-
-                if ((serial & 0x80000000) != 0)
-                    item.Amount = p.ReadUShort();
-                else
-                    item.Amount = 1;
+                item.Amount = (serial & 0x80000000) != 0 ? p.ReadUShort() : (ushort)1;
 
                 if ((graphic & 0x8000) != 0)
                     item.Graphic = (ushort)(graphic & 0x7FFF + p.ReadSByte());
@@ -36,55 +83,43 @@ namespace UOInterface
 
                 if ((y & 0x4000) != 0)
                     item.Flags = (UOFlags)p.ReadByte();
+
+                item.Container = Serial.Invalid;
             }
             item.ProcessDelta();
-            AddItem(item);
+            ProcessDelta();
         }
 
-        private static void OnContainerContentUpdate(Packet p)//0x25
+        private static void OnWorldItemSA(Packet p)//0xF3
         {
+            p.Skip(2);//unknown
+
+            byte type = p.ReadByte();
             Item item = GetOrCreateItem(p.ReadUInt());
             lock (item.SyncRoot)
             {
-                item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
-                item.Amount = Math.Max(p.ReadUShort(), (ushort)1);
-                item.Position = new Position(p.ReadUShort(), p.ReadUShort());
-                if (usePostKRPackets.Value)
-                    p.ReadByte(); //useless?
+                ushort g = p.ReadUShort();
+                if (type == 2)
+                    g |= 0x4000;
+                item.Graphic = g;
+                item.Direction = (Direction)p.ReadByte();
 
-                item.Container = p.ReadUInt();
+                item.Amount = p.ReadUShort();
+                p.Skip(2);//amount again? wtf???
+
+                item.Position = new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte());
+                p.Skip(1);//light? wtf?
+
                 item.Hue = p.ReadUShort();
+                item.Flags = (UOFlags)p.ReadByte();
+
+                if (usePostHSChanges.Value)
+                    p.ReadUShort();//unknown
+
+                item.Container = Serial.Invalid;
             }
             item.ProcessDelta();
-            AddItem(item);
-        }
-
-        private static void OnContainerContent(Packet p)//0x3C
-        {
-            ushort count = p.ReadUShort();
-            for (int i = 0; i < count; i++)
-                OnContainerContentUpdate(p);
-        }
-
-        private static void OnEquipUpdate(Packet p)//0x2E
-        {
-            Item item = GetOrCreateItem(p.ReadUInt());
-            lock (item.SyncRoot)
-            {
-                item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
-                item.Layer = (Layer)p.ReadByte();
-                item.Container = p.ReadUInt();
-                item.Hue = p.ReadUShort();
-
-                Mobile m = GetMobile(item.Container);
-                if (m.IsValid)
-                {
-                    m[item.Layer] = item;
-                    m.ProcessDelta();
-                }
-            }
-            item.ProcessDelta();
-            AddItem(item);
+            ProcessDelta();
         }
     }
 }

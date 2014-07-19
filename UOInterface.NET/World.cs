@@ -2,25 +2,29 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace UOInterface
 {
     public static partial class World
     {
-        private static readonly ConcurrentDictionary<Serial, Item> items = new ConcurrentDictionary<Serial, Item>(1, 512);
+        private static readonly ConcurrentDictionary<Serial, Item> items = new ConcurrentDictionary<Serial, Item>(1, 256);
+        private static readonly ConcurrentDictionary<Serial, Item> ground = new ConcurrentDictionary<Serial, Item>(1, 256);
         private static readonly ConcurrentDictionary<Serial, Mobile> mobiles = new ConcurrentDictionary<Serial, Mobile>(1, 64);
+        private static readonly List<Item> itemsToAdd = new List<Item>(), itemsRemoved = new List<Item>();
+        private static readonly List<Mobile> mobilesToAdd = new List<Mobile>(), mobilesRemoved = new List<Mobile>();
         private static readonly List<Serial> party = new List<Serial>();
 
-        public static IEnumerable<Item> Items { get { return items.Select(item => item.Value); } }
         public static IEnumerable<Mobile> Mobiles { get { return mobiles.Select(mobile => mobile.Value); } }
+        public static IEnumerable<Item> Items { get { return items.Select(item => item.Value); } }
+        public static IEnumerable<Item> Ground { get { return ground.Select(item => item.Value); } }
+
         public static Serial[] Party { get { lock (party) return party.ToArray(); } }
         public static PlayerMobile Player { get; private set; }
         public static Map Map { get; private set; }
 
-        public static event EventHandler<Item> ItemAdded;
-        public static event EventHandler<Item> ItemRemoved;
-        public static event EventHandler<Mobile> MobileAdded;
-        public static event EventHandler<Mobile> MobileRemoved;
+        public static event EventHandler<CollectionChangedEventArgs<Item>> ItemsChanged;
+        public static event EventHandler<CollectionChangedEventArgs<Mobile>> MobilesChanged;
         public static event EventHandler MapChanged, Cleared;
 
         static World()
@@ -36,9 +40,10 @@ namespace UOInterface
             lock (party)
                 party.Clear();
             items.Clear();
+            ground.Clear();
             mobiles.Clear();
             movementQueue.Clear();
-            Cleared.RaiseAsync();
+            Cleared.Raise();
         }
 
         public static bool IsInParty(Serial serial) { lock (party) return party.Contains(serial); }
@@ -65,7 +70,7 @@ namespace UOInterface
         public static Item GetItem(Serial serial)
         {
             Item item;
-            return items.TryGetValue(serial, out item) ? item : Item.Invalid;
+            return items.TryGetValue(serial, out item) || ground.TryGetValue(serial, out item) ? item : Item.Invalid;
         }
 
         public static Mobile GetMobile(Serial serial)
@@ -77,56 +82,109 @@ namespace UOInterface
         private static Item GetOrCreateItem(Serial serial)
         {
             Item item;
-            return items.TryGetValue(serial, out item) ? item : new Item(serial);
+            if (!items.TryGetValue(serial, out item) && !ground.TryGetValue(serial, out item))
+                itemsToAdd.Add(item = new Item(serial));
+            return item;
         }
 
         private static Mobile GetOrCreateMobile(Serial serial)
         {
             Mobile mobile;
-            return mobiles.TryGetValue(serial, out mobile) ? mobile : new Mobile(serial);
+            if (!mobiles.TryGetValue(serial, out mobile))
+                mobilesToAdd.Add(mobile = new Mobile(serial));
+            return mobile;
         }
 
-        private static void AddItem(Item item)
+        private static void RemoveItem(Serial serial)
         {
-            if (items.TryAdd(item.Serial, item))
-                ItemAdded.RaiseAsync(item);
-        }
+            Item item;
+            if (!items.TryRemove(serial, out item) && !ground.TryRemove(serial, out item))
+                return;
 
-        private static void AddMobile(Mobile mobile)
-        {
-            if (mobiles.TryAdd(mobile.Serial, mobile))
-                MobileAdded.RaiseAsync(mobile);
-        }
-
-        private static void Remove(Serial serial)
-        {
-            if (serial.IsItem)
+            itemsRemoved.Add(item);
+            lock (item.SyncRoot)
             {
-                Item item;
-                if (items.TryRemove(serial, out item))
-                    ItemRemoved.RaiseAsync(item);
+                foreach (Item i in item.Items)
+                    RemoveItem(i);
+                item.Clear();
             }
-            else if (serial.IsMobile)
-            {
-                Mobile mobile;
-                if (mobiles.TryRemove(serial, out mobile))
-                    MobileRemoved.RaiseAsync(mobile);
-            }
-            else
-                throw new ArgumentException("Remove with invalid serial.", "serial");
-            foreach (Serial s in GetContainerContents(serial))
-                Remove(s);
+            item.ProcessDelta();
         }
 
-        private static IEnumerable<Serial> GetContainerContents(Serial serial, bool recursive = true)
+        private static void RemoveMobile(Serial serial)
         {
-            foreach (Item item in Items.Where(item => item.Container == serial))
+            Mobile mobile;
+            if (!mobiles.TryRemove(serial, out mobile))
+                return;
+
+            mobilesRemoved.Add(mobile);
+            lock (mobile.SyncRoot)
             {
-                if (recursive)
-                    foreach (Serial s in GetContainerContents(item.Serial))
-                        yield return s;
-                yield return item;
+                foreach (Item i in mobile.Items)
+                    RemoveItem(i);
+                mobile.Clear();
             }
+            mobile.ProcessDelta();
+        }
+
+        private static void ProcessDelta()
+        {
+            toUpdate.ExceptWith(itemsRemoved);
+            foreach (IGrouping<Serial, Item> group in itemsRemoved.GroupBy(i => i.Container))
+            {
+                Entity container = GetEntity(group.Key);
+                if (container.IsValid)
+                {
+                    foreach (Item i in group)
+                        container.RemoveItem(i);
+                    container.ProcessDelta();
+                }
+            }
+
+            CollectionChangedEventArgs<Item> itemsChanged = null;
+            CollectionChangedEventArgs<Mobile> mobilesChanged = null;
+
+            if (itemsToAdd.Count > 0 || itemsRemoved.Count > 0)
+            {
+                foreach (Item item in itemsToAdd)
+                    (item.Container.IsValid ? items : ground).TryAdd(item.Serial, item);
+
+                itemsChanged = new CollectionChangedEventArgs<Item>(itemsToAdd, itemsRemoved);
+                itemsToAdd.Clear();
+                itemsRemoved.Clear();
+            }
+
+            if (mobilesToAdd.Count > 0 || mobilesRemoved.Count > 0)
+            {
+                foreach (Mobile mobile in mobilesToAdd)
+                    mobiles.TryAdd(mobile.Serial, mobile);
+
+                mobilesChanged = new CollectionChangedEventArgs<Mobile>(mobilesToAdd, mobilesRemoved);
+                mobilesToAdd.Clear();
+                mobilesRemoved.Clear();
+            }
+
+            foreach (IGrouping<Serial, Item> group in toUpdate.GroupBy(i => i.Container))
+            {
+                Entity container = GetEntity(group.Key);
+                if (container.IsValid)
+                {
+                    foreach (Item i in group)
+                    {
+                        container.AddItem(i);
+                        toUpdate.Remove(i);
+                    }
+                    container.ProcessDelta();
+                }
+            }
+
+            Task.Run(() =>
+            {
+                if (itemsChanged != null)
+                    ItemsChanged.Raise(itemsChanged);
+                if (mobilesChanged != null)
+                    MobilesChanged.Raise(mobilesChanged);
+            });
         }
     }
 }

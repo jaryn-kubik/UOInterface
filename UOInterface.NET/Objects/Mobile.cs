@@ -8,10 +8,6 @@ namespace UOInterface
         public new static readonly Mobile Invalid = new Mobile(Serial.Invalid);
         internal Mobile(Serial serial) : base(serial) { }
 
-        [Flags]
-        protected enum MobileDelta { Hits, Mana, Stamina, Layer }
-        protected MobileDelta mobileDelta;
-
         private ushort hits;
         private ushort hitsMax;
         private ushort mana;
@@ -21,7 +17,6 @@ namespace UOInterface
         private Notoriety notoriety;
         private bool warMode;
         private bool renamable;
-        private readonly Serial[] layers = new Serial[0x20];
 
         public ushort Hits
         {
@@ -31,7 +26,7 @@ namespace UOInterface
                 if (hits != value)
                 {
                     hits = value;
-                    mobileDelta |= MobileDelta.Hits;
+                    delta |= Delta.Hits;
                 }
             }
         }
@@ -44,7 +39,7 @@ namespace UOInterface
                 if (hitsMax != value)
                 {
                     hitsMax = value;
-                    mobileDelta |= MobileDelta.Hits;
+                    delta |= Delta.Hits;
                 }
             }
         }
@@ -57,7 +52,7 @@ namespace UOInterface
                 if (mana != value)
                 {
                     mana = value;
-                    mobileDelta |= MobileDelta.Mana;
+                    delta |= Delta.Mana;
                 }
             }
         }
@@ -70,7 +65,7 @@ namespace UOInterface
                 if (manaMax != value)
                 {
                     manaMax = value;
-                    mobileDelta |= MobileDelta.Mana;
+                    delta |= Delta.Mana;
                 }
             }
         }
@@ -83,7 +78,7 @@ namespace UOInterface
                 if (stamina != value)
                 {
                     stamina = value;
-                    mobileDelta |= MobileDelta.Stamina;
+                    delta |= Delta.Stamina;
                 }
             }
         }
@@ -96,7 +91,7 @@ namespace UOInterface
                 if (staminaMax != value)
                 {
                     staminaMax = value;
-                    mobileDelta |= MobileDelta.Stamina;
+                    delta |= Delta.Stamina;
                 }
             }
         }
@@ -109,7 +104,7 @@ namespace UOInterface
                 if (notoriety != value)
                 {
                     notoriety = value;
-                    entityDelta |= EntityDelta.Attributes;
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -122,7 +117,7 @@ namespace UOInterface
                 if (warMode != value)
                 {
                     warMode = value;
-                    entityDelta |= EntityDelta.Attributes;
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -135,20 +130,7 @@ namespace UOInterface
                 if (renamable != value)
                 {
                     renamable = value;
-                    entityDelta |= EntityDelta.Attributes;
-                }
-            }
-        }
-
-        public Serial this[Layer layer]
-        {
-            get { lock (syncRoot) return layers[(int)layer]; }
-            internal set
-            {
-                if (layers[(int)layer] != value)
-                {
-                    layers[(int)layer] = value;
-                    mobileDelta |= MobileDelta.Layer;
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -156,21 +138,17 @@ namespace UOInterface
         public event EventHandler HitsChanged;
         public event EventHandler ManaChanged;
         public event EventHandler StaminaChanged;
-        public event EventHandler LayerChanged;
-        internal override void ProcessDelta()
+        protected override void OnProcessDelta(Delta d)
         {
-            base.ProcessDelta();
-            if (mobileDelta.HasFlag(MobileDelta.Hits))
-                HitsChanged.RaiseAsync(this);
+            base.OnProcessDelta(d);
+            if (d.HasFlag(Delta.Hits))
+                HitsChanged.Raise(this);
 
-            if (mobileDelta.HasFlag(MobileDelta.Mana))
-                ManaChanged.RaiseAsync(this);
+            if (d.HasFlag(Delta.Mana))
+                ManaChanged.Raise(this);
 
-            if (mobileDelta.HasFlag(MobileDelta.Stamina))
-                StaminaChanged.RaiseAsync(this);
-
-            if (mobileDelta.HasFlag(MobileDelta.Layer))
-                LayerChanged.RaiseAsync(this);
+            if (d.HasFlag(Delta.Stamina))
+                StaminaChanged.Raise(this);
         }
 
         public override bool IsValid { get { return Serial.IsMobile; } }

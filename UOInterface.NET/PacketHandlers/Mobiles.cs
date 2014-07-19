@@ -18,7 +18,7 @@ namespace UOInterface
                 mobile.Notoriety = (Notoriety)p.ReadByte();
             }
             mobile.ProcessDelta();
-            AddMobile(mobile);
+            ProcessDelta();
         }
 
         private static void OnMobileIncoming(Packet p)//0x78
@@ -52,14 +52,13 @@ namespace UOInterface
                             item.Graphic = (ushort)(graphic & 0x3FFF);
 
                         item.Container = mobile;
-                        mobile[item.Layer] = item;
+                        mobile.AddItem(item);
                     }
                     item.ProcessDelta();
-                    AddItem(item);
                 }
             }
             mobile.ProcessDelta();
-            AddMobile(mobile);
+            ProcessDelta();
         }
 
         private static void OnMobileAttributes(Packet p)//0x2D

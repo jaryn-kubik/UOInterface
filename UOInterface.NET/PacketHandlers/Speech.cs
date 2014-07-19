@@ -7,7 +7,7 @@ namespace UOInterface
         private static void OnAsciiMessage(Packet p)//0x1C
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)//server?
+            if (!mobile.IsValid)
                 return;
             lock (mobile.SyncRoot)
             {
@@ -16,13 +16,12 @@ namespace UOInterface
                 mobile.Name = p.ReadStringAscii(30);
             }
             mobile.ProcessDelta();
-            AddMobile(mobile);
         }
 
         private static void OnUnicodeMessage(Packet p)//0xAE
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)//server?
+            if (!mobile.IsValid)
                 return;
             lock (mobile.SyncRoot)
             {
@@ -31,13 +30,12 @@ namespace UOInterface
                 mobile.Name = p.ReadStringAscii(30);
             }
             mobile.ProcessDelta();
-            AddMobile(mobile);
         }
 
         private static void OnLocalizedMessage(Packet p)//0xC1
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)//server?
+            if (!mobile.IsValid)
                 return;
             lock (mobile.SyncRoot)
             {
@@ -46,13 +44,12 @@ namespace UOInterface
                 mobile.Name = p.ReadStringAscii(30);
             }
             mobile.ProcessDelta();
-            AddMobile(mobile);
         }
 
         private static void OnLocalizedMessageAffix(Packet p)//0xCC
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)//server?
+            if (!mobile.IsValid)
                 return;
             lock (mobile.SyncRoot)
             {
@@ -61,7 +58,6 @@ namespace UOInterface
                 mobile.Name = p.ReadStringAscii(30);
             }
             mobile.ProcessDelta();
-            AddMobile(mobile);
         }
     }
 }

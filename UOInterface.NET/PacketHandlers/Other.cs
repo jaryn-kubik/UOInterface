@@ -4,8 +4,15 @@ namespace UOInterface
 {
     public static partial class World
     {
-        private static void OnRemoveObject(Packet p)//0x1D
-        { Remove(p.ReadUInt()); }
+        private static void OnRemoveObject(Packet p) //0x1D
+        {
+            Serial serial = p.ReadUInt();
+            if (serial.IsItem)
+                RemoveItem(serial);
+            else if (serial.IsMobile)
+                RemoveMobile(serial);
+            ProcessDelta();
+        }
 
         private static void OnPersonalLightLevel(Packet p)//0x4E
         { p.WriteByte(5, 0x1F); }
@@ -44,7 +51,7 @@ namespace UOInterface
 
                 case 8://map change
                     Map = (Map)p.ReadByte();
-                    MapChanged.RaiseAsync();
+                    MapChanged.Raise();
                     break;
             }
         }

@@ -8,10 +8,6 @@ namespace UOInterface
         public new static readonly PlayerMobile Invalid = new PlayerMobile(Serial.Invalid);
         internal PlayerMobile(Serial serial) : base(serial) { }
 
-        [Flags]
-        protected enum PlayerDelta { Stats }
-        protected PlayerDelta playerDelta;
-
         private ushort strength;
         private ushort intelligence;
         private ushort dexterity;
@@ -39,7 +35,7 @@ namespace UOInterface
                 if (strength != value)
                 {
                     strength = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -52,7 +48,7 @@ namespace UOInterface
                 if (intelligence != value)
                 {
                     intelligence = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -65,7 +61,7 @@ namespace UOInterface
                 if (dexterity != value)
                 {
                     dexterity = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -78,7 +74,7 @@ namespace UOInterface
                 if (weight != value)
                 {
                     weight = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -91,7 +87,7 @@ namespace UOInterface
                 if (weightMax != value)
                 {
                     weightMax = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -104,7 +100,7 @@ namespace UOInterface
                 if (gold != value)
                 {
                     gold = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -117,7 +113,7 @@ namespace UOInterface
                 if (resistPhysical != value)
                 {
                     resistPhysical = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -130,7 +126,7 @@ namespace UOInterface
                 if (resistFire != value)
                 {
                     resistFire = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -143,7 +139,7 @@ namespace UOInterface
                 if (resistCold != value)
                 {
                     resistCold = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -156,7 +152,7 @@ namespace UOInterface
                 if (resistPoison != value)
                 {
                     resistPoison = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -169,7 +165,7 @@ namespace UOInterface
                 if (resistEnergy != value)
                 {
                     resistEnergy = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -182,7 +178,7 @@ namespace UOInterface
                 if (followers != value)
                 {
                     followers = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -195,7 +191,7 @@ namespace UOInterface
                 if (followersMax != value)
                 {
                     followersMax = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -208,7 +204,7 @@ namespace UOInterface
                 if (luck != value)
                 {
                     luck = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -221,7 +217,7 @@ namespace UOInterface
                 if (tithingPoints != value)
                 {
                     tithingPoints = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -234,7 +230,7 @@ namespace UOInterface
                 if (damageMin != value)
                 {
                     damageMin = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -247,7 +243,7 @@ namespace UOInterface
                 if (damageMax != value)
                 {
                     damageMax = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -260,17 +256,17 @@ namespace UOInterface
                 if (female != value)
                 {
                     female = value;
-                    playerDelta |= PlayerDelta.Stats;
+                    delta |= Delta.Stats;
                 }
             }
         }
 
         public event EventHandler StatsChanged;
-        internal override void ProcessDelta()
+        protected override void OnProcessDelta(Delta d)
         {
-            base.ProcessDelta();
-            if (playerDelta.HasFlag(PlayerDelta.Stats))
-                StatsChanged.RaiseAsync(this);
+            base.OnProcessDelta(d);
+            if (d.HasFlag(Delta.Stats))
+                StatsChanged.Raise(this);
         }
 
         protected override void ToString(StringBuilder sb)

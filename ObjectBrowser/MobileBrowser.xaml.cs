@@ -10,8 +10,7 @@ namespace ObjectBrowser
         {
             InitializeComponent();
 
-            World.MobileAdded += World_MobileAdded;
-            World.MobileRemoved += World_MobileRemoved;
+            World.MobilesChanged += World_MobilesChanged;
             World.Cleared += World_Cleared;
             list.SelectionChanged += list_SelectionChanged;
         }
@@ -23,7 +22,6 @@ namespace ObjectBrowser
                 m.AppearanceChanged -= Mobile_Changed;
                 m.AttributesChanged -= Mobile_Changed;
                 m.HitsChanged -= Mobile_Changed;
-                m.LayerChanged -= Mobile_Changed;
                 m.ManaChanged -= Mobile_Changed;
                 m.PositionChanged -= Mobile_Changed;
                 m.StaminaChanged -= Mobile_Changed;
@@ -37,7 +35,6 @@ namespace ObjectBrowser
                 m.AppearanceChanged += Mobile_Changed;
                 m.AttributesChanged += Mobile_Changed;
                 m.HitsChanged += Mobile_Changed;
-                m.LayerChanged += Mobile_Changed;
                 m.ManaChanged += Mobile_Changed;
                 m.PositionChanged += Mobile_Changed;
                 m.StaminaChanged += Mobile_Changed;
@@ -49,33 +46,33 @@ namespace ObjectBrowser
             e.Handled = true;
         }
 
-        private void World_MobileAdded(object sender, Mobile e)
+        private void World_MobilesChanged(object sender, CollectionChangedEventArgs<Mobile> e)
         {
             Dispatcher.Invoke(() =>
             {
-                e.AppearanceChanged += Mobile_AppearanceChanged;
-                list.Items.Add(e);
-            });
-        }
+                foreach (Mobile m in e.Added)
+                {
+                    m.AppearanceChanged += Mobile_AppearanceChanged;
+                    list.Items.Add(m);
+                }
 
-        private void World_MobileRemoved(object sender, Mobile e)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                list.Items.Remove(e);
-                e.AppearanceChanged -= Mobile_AppearanceChanged;
-                if (list.SelectedItem == e)
-                    list.SelectedItem = null;
+                foreach (Mobile m in e.Removed)
+                {
+                    list.Items.Remove(m);
+                    m.AppearanceChanged -= Mobile_AppearanceChanged;
+                    if (list.SelectedItem == m)
+                        list.SelectedItem = null;
+                }
             });
         }
 
         private void World_Cleared(object sender, EventArgs e)
         {
             Dispatcher.Invoke(() =>
-            {
-                list.Items.Clear();
-                text.Clear();
-            });
+             {
+                 list.Items.Clear();
+                 text.Clear();
+             });
         }
 
         private void Mobile_AppearanceChanged(object sender, EventArgs e)

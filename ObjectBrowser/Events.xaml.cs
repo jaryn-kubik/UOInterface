@@ -24,13 +24,13 @@ namespace ObjectBrowser
 
         private void AppendLine(string line)
         {
-            if (Dispatcher.CheckAccess())
-            {
-                text.AppendText(line + "\n");
-                text.ScrollToEnd();
-            }
-            else
-                Dispatcher.Invoke(() => AppendLine(line));
+            Dispatcher.InvokeAsync(() => AppendLineInvoked(line));
+        }
+
+        private void AppendLineInvoked(string line)
+        {
+            text.AppendText(line + "\n");
+            text.ScrollToEnd();
         }
 
         private void Client_KeyDown(object sender, UOKeyEventArgs e)

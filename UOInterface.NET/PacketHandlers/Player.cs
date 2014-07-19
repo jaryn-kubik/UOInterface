@@ -9,7 +9,7 @@ namespace UOInterface
         private static void OnLoginConfirm(Packet p)//0x1B
         {
             Clear();
-            Player = new PlayerMobile(p.ReadUInt());
+            mobilesToAdd.Add(Player = new PlayerMobile(p.ReadUInt()));
             p.Skip(4);//unknown
 
             lock (Player.SyncRoot)
@@ -22,7 +22,7 @@ namespace UOInterface
                 //p.ReadUShort();//map height
             }
             Player.ProcessDelta();
-            AddMobile(Player);
+            ProcessDelta();
         }
 
         private static void OnPlayerUpdate(Packet p)//0x20
@@ -45,7 +45,6 @@ namespace UOInterface
             }
             OnPlayerMoved();
             Player.ProcessDelta();
-            AddMobile(Player);
         }
 
         private static void OnWarMode(Packet packet)//0x72
@@ -53,10 +52,11 @@ namespace UOInterface
 
         private static void OnPlayerMoved()
         {
-            foreach (Mobile m in Mobiles.Where(m => m.Distance > 0x20 && !party.Contains(m)))
-                Remove(m);
-            foreach (Item i in Items.Where(i => i.OnGround && i.Distance > 0x20))
-                Remove(i);
+            foreach (Mobile m in Mobiles.Where(m => m.Distance > 20 && !party.Contains(m)))
+                RemoveMobile(m);
+            foreach (Item i in Ground.Where(i => i.Distance > 20))
+                RemoveItem(i);
+            ProcessDelta();
         }
     }
 }

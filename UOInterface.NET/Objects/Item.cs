@@ -8,10 +8,6 @@ namespace UOInterface
         public new static readonly Item Invalid = new Item(Serial.Invalid);
         internal Item(Serial serial) : base(serial) { }
 
-        [Flags]
-        protected enum ItemDelta { Ownership }
-        protected ItemDelta itemDelta;
-
         private ushort amount;
         private Serial container;
         private Layer layer;
@@ -24,7 +20,7 @@ namespace UOInterface
                 if (amount != value)
                 {
                     amount = value;
-                    entityDelta |= EntityDelta.Attributes;
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -37,7 +33,7 @@ namespace UOInterface
                 if (container != value)
                 {
                     container = value;
-                    itemDelta |= ItemDelta.Ownership;
+                    delta |= Delta.Ownership;
                 }
             }
         }
@@ -50,17 +46,17 @@ namespace UOInterface
                 if (layer != value)
                 {
                     layer = value;
-                    itemDelta |= ItemDelta.Ownership;
+                    delta |= Delta.Ownership;
                 }
             }
         }
 
         public event EventHandler OwnerChanged;
-        internal override void ProcessDelta()
+        protected override void OnProcessDelta(Delta d)
         {
-            base.ProcessDelta();
-            if (itemDelta.HasFlag(ItemDelta.Ownership))
-                OwnerChanged.RaiseAsync(this);
+            base.OnProcessDelta(d);
+            if (d.HasFlag(Delta.Ownership))
+                OwnerChanged.Raise(this);
         }
 
         protected override void ToString(StringBuilder sb)
@@ -73,9 +69,6 @@ namespace UOInterface
 
         public override bool IsValid { get { return Serial.IsItem; } }
         public override bool Exists { get { return World.ContainsItem(Serial); } }
-        public override int DistanceTo(Entity entity)
-        { return OnGround ? base.DistanceTo(entity) : World.GetEntity(RootContainer).DistanceTo(World.Player); }
-
         public bool OnGround { get { return !Container.IsValid; } }
         public Serial RootContainer
         {
