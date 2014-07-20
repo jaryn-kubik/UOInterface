@@ -14,7 +14,7 @@ namespace UOInterface
 
         public ushort Amount
         {
-            get { lock (syncRoot) return amount; }
+            get { return amount; }
             internal set
             {
                 if (amount != value)
@@ -27,7 +27,7 @@ namespace UOInterface
 
         public Serial Container
         {
-            get { lock (syncRoot) return container; }
+            get { return container; }
             internal set
             {
                 if (container != value)
@@ -40,7 +40,7 @@ namespace UOInterface
 
         public Layer Layer
         {
-            get { lock (syncRoot) return layer; }
+            get { return layer; }
             internal set
             {
                 if (layer != value)

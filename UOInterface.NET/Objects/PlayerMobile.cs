@@ -1,12 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace UOInterface
 {
     public class PlayerMobile : Mobile
     {
+        private static readonly int skillCount = Enum.GetValues(typeof(SkillName)).Length;
         public new static readonly PlayerMobile Invalid = new PlayerMobile(Serial.Invalid);
-        internal PlayerMobile(Serial serial) : base(serial) { }
+        internal PlayerMobile(Serial serial)
+            : base(serial)
+        {
+            for (int i = 0; i < skills.Length; i++)
+                skills[i] = new Skill();
+        }
 
         private ushort strength;
         private ushort intelligence;
@@ -26,10 +33,11 @@ namespace UOInterface
         private ushort damageMin;
         private ushort damageMax;
         private bool female;
+        private readonly Skill[] skills = new Skill[skillCount];
 
         public ushort Strength
         {
-            get { lock (syncRoot) return strength; }
+            get { return strength; }
             internal set
             {
                 if (strength != value)
@@ -42,7 +50,7 @@ namespace UOInterface
 
         public ushort Intelligence
         {
-            get { lock (syncRoot) return intelligence; }
+            get { return intelligence; }
             internal set
             {
                 if (intelligence != value)
@@ -55,7 +63,7 @@ namespace UOInterface
 
         public ushort Dexterity
         {
-            get { lock (syncRoot) return dexterity; }
+            get { return dexterity; }
             internal set
             {
                 if (dexterity != value)
@@ -68,7 +76,7 @@ namespace UOInterface
 
         public ushort Weight
         {
-            get { lock (syncRoot) return weight; }
+            get { return weight; }
             internal set
             {
                 if (weight != value)
@@ -81,7 +89,7 @@ namespace UOInterface
 
         public ushort WeightMax
         {
-            get { lock (syncRoot) return weightMax; }
+            get { return weightMax; }
             internal set
             {
                 if (weightMax != value)
@@ -94,7 +102,7 @@ namespace UOInterface
 
         public uint Gold
         {
-            get { lock (syncRoot) return gold; }
+            get { return gold; }
             internal set
             {
                 if (gold != value)
@@ -107,7 +115,7 @@ namespace UOInterface
 
         public ushort ResistPhysical
         {
-            get { lock (syncRoot) return resistPhysical; }
+            get { return resistPhysical; }
             internal set
             {
                 if (resistPhysical != value)
@@ -120,7 +128,7 @@ namespace UOInterface
 
         public ushort ResistFire
         {
-            get { lock (syncRoot) return resistFire; }
+            get { return resistFire; }
             internal set
             {
                 if (resistFire != value)
@@ -133,7 +141,7 @@ namespace UOInterface
 
         public ushort ResistCold
         {
-            get { lock (syncRoot) return resistCold; }
+            get { return resistCold; }
             internal set
             {
                 if (resistCold != value)
@@ -146,7 +154,7 @@ namespace UOInterface
 
         public ushort ResistPoison
         {
-            get { lock (syncRoot) return resistPoison; }
+            get { return resistPoison; }
             internal set
             {
                 if (resistPoison != value)
@@ -159,7 +167,7 @@ namespace UOInterface
 
         public ushort ResistEnergy
         {
-            get { lock (syncRoot) return resistEnergy; }
+            get { return resistEnergy; }
             internal set
             {
                 if (resistEnergy != value)
@@ -172,7 +180,7 @@ namespace UOInterface
 
         public byte Followers
         {
-            get { lock (syncRoot) return followers; }
+            get { return followers; }
             internal set
             {
                 if (followers != value)
@@ -185,7 +193,7 @@ namespace UOInterface
 
         public byte FollowersMax
         {
-            get { lock (syncRoot) return followersMax; }
+            get { return followersMax; }
             internal set
             {
                 if (followersMax != value)
@@ -198,7 +206,7 @@ namespace UOInterface
 
         public ushort Luck
         {
-            get { lock (syncRoot) return luck; }
+            get { return luck; }
             internal set
             {
                 if (luck != value)
@@ -211,7 +219,7 @@ namespace UOInterface
 
         public uint TithingPoints
         {
-            get { lock (syncRoot) return tithingPoints; }
+            get { return tithingPoints; }
             internal set
             {
                 if (tithingPoints != value)
@@ -224,7 +232,7 @@ namespace UOInterface
 
         public ushort DamageMin
         {
-            get { lock (syncRoot) return damageMin; }
+            get { return damageMin; }
             internal set
             {
                 if (damageMin != value)
@@ -237,7 +245,7 @@ namespace UOInterface
 
         public ushort DamageMax
         {
-            get { lock (syncRoot) return damageMax; }
+            get { return damageMax; }
             internal set
             {
                 if (damageMax != value)
@@ -250,7 +258,7 @@ namespace UOInterface
 
         public bool Female
         {
-            get { lock (syncRoot) return female; }
+            get { return female; }
             internal set
             {
                 if (female != value)
@@ -261,12 +269,38 @@ namespace UOInterface
             }
         }
 
+        public IReadOnlyList<Skill> Skills { get { return skills; } }
+        internal void UpdateSkill(int id, ushort realValue, ushort baseValue, SkillLock skillLock, ushort cap)
+        {
+            if (id < skills.Length)
+            {
+                skills[id].ValueFixed = realValue;
+                skills[id].BaseFixed = baseValue;
+                skills[id].Lock = skillLock;
+                skills[id].CapFixed = cap;
+                delta |= Delta.Skills;
+            }
+        }
+
+        internal void UpdateSkillLock(int id, SkillLock skillLock)
+        {
+            if (id < skills.Length)
+            {
+                skills[id].Lock = skillLock;
+                delta |= Delta.Skills;
+            }
+        }
+
         public event EventHandler StatsChanged;
+        public event EventHandler SkillsChanged;
         protected override void OnProcessDelta(Delta d)
         {
             base.OnProcessDelta(d);
             if (d.HasFlag(Delta.Stats))
                 StatsChanged.Raise(this);
+
+            if (d.HasFlag(Delta.Skills))
+                SkillsChanged.Raise(this);
         }
 
         protected override void ToString(StringBuilder sb)
@@ -286,6 +320,18 @@ namespace UOInterface
             sb.AppendFormat("Tiths: {0}\n", TithingPoints);
             sb.AppendFormat("Damage: {0}-{1}\n", DamageMin, DamageMax);
             sb.AppendFormat("Female: {0}", Female);
+        }
+
+        public class Skill
+        {
+            public SkillLock Lock { get; internal set; }
+            public ushort ValueFixed { get; internal set; }
+            public ushort BaseFixed { get; internal set; }
+            public ushort CapFixed { get; internal set; }
+
+            public double Value { get { return ValueFixed / 10.0; } }
+            public double Base { get { return BaseFixed / 10.0; } }
+            public double Cap { get { return CapFixed / 10.0; } }
         }
     }
 }

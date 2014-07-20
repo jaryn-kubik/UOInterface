@@ -12,9 +12,6 @@ namespace UOInterface
         public static readonly Entity Invalid = new Entity(Serial.Invalid);
         protected Entity(Serial serial) { Serial = serial; }
 
-        protected readonly object syncRoot = new object();
-        internal object SyncRoot { get { return syncRoot; } }
-
         [Flags]
         protected enum Delta
         {
@@ -26,7 +23,8 @@ namespace UOInterface
             Hits = (1 << 4),
             Mana = (1 << 5),
             Stamina = (1 << 6),
-            Stats = (1 << 7)
+            Stats = (1 << 7),
+            Skills = (1 << 8)
         }
         protected Delta delta;
 
@@ -41,13 +39,13 @@ namespace UOInterface
 
         public Serial Serial
         {
-            get { lock (syncRoot) return serial; }
+            get { return serial; }
             internal set { serial = value; }
         }
 
         public Graphic Graphic
         {
-            get { lock (syncRoot) return graphic; }
+            get { return graphic; }
             internal set
             {
                 if (graphic != value)
@@ -60,7 +58,7 @@ namespace UOInterface
 
         public Hue Hue
         {
-            get { lock (syncRoot) return hue; }
+            get { return hue; }
             internal set
             {
                 if (hue != value)
@@ -73,7 +71,7 @@ namespace UOInterface
 
         public string Name
         {
-            get { lock (syncRoot) return name; }
+            get { return name; }
             internal set
             {
                 if (name != value)
@@ -86,7 +84,7 @@ namespace UOInterface
 
         public Position Position
         {
-            get { lock (syncRoot) return position; }
+            get { return position; }
             internal set
             {
                 if (position != value)
@@ -99,7 +97,7 @@ namespace UOInterface
 
         public Direction Direction
         {
-            get { lock (syncRoot) return direction; }
+            get { return direction; }
             internal set
             {
                 direction &= Direction.Running;
@@ -113,7 +111,7 @@ namespace UOInterface
 
         public UOFlags Flags
         {
-            get { lock (syncRoot) return flags; }
+            get { return flags; }
             internal set
             {
                 if (flags != value)

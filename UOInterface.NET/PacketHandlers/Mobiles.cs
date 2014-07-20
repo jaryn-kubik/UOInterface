@@ -8,15 +8,12 @@ namespace UOInterface
         private static void OnMobileMoving(Packet p)//0x77
         {
             Mobile mobile = GetOrCreateMobile(p.ReadUInt());
-            lock (mobile.SyncRoot)
-            {
-                mobile.Graphic = p.ReadUShort();
-                mobile.Position = new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte());
-                mobile.Direction = (Direction)p.ReadByte();
-                mobile.Hue = p.ReadUShort();
-                mobile.Flags = (UOFlags)p.ReadByte();
-                mobile.Notoriety = (Notoriety)p.ReadByte();
-            }
+            mobile.Graphic = p.ReadUShort();
+            mobile.Position = new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte());
+            mobile.Direction = (Direction)p.ReadByte();
+            mobile.Hue = p.ReadUShort();
+            mobile.Flags = (UOFlags)p.ReadByte();
+            mobile.Notoriety = (Notoriety)p.ReadByte();
             mobile.ProcessDelta();
             ProcessDelta();
         }
@@ -24,38 +21,32 @@ namespace UOInterface
         private static void OnMobileIncoming(Packet p)//0x78
         {
             Mobile mobile = GetOrCreateMobile(p.ReadUInt());
-            lock (mobile.SyncRoot)
+            mobile.Graphic = p.ReadUShort();
+            mobile.Position = new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte());
+            mobile.Direction = (Direction)p.ReadByte();
+            mobile.Hue = p.ReadUShort();
+            mobile.Flags = (UOFlags)p.ReadByte();
+            mobile.Notoriety = (Notoriety)p.ReadByte();
+
+            uint itemSerial;
+            while ((itemSerial = p.ReadUInt()) != 0)
             {
-                mobile.Graphic = p.ReadUShort();
-                mobile.Position = new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte());
-                mobile.Direction = (Direction)p.ReadByte();
-                mobile.Hue = p.ReadUShort();
-                mobile.Flags = (UOFlags)p.ReadByte();
-                mobile.Notoriety = (Notoriety)p.ReadByte();
+                Item item = GetOrCreateItem(itemSerial);
+                ushort graphic = p.ReadUShort();
+                item.Layer = (Layer)p.ReadByte();
+                if (useNewMobileIncoming.Value || (graphic & 0x8000) != 0)
+                    item.Hue = p.ReadUShort();
 
-                uint itemSerial;
-                while ((itemSerial = p.ReadUInt()) != 0)
-                {
-                    Item item = GetOrCreateItem(itemSerial);
-                    lock (item.SyncRoot)
-                    {
-                        ushort graphic = p.ReadUShort();
-                        item.Layer = (Layer)p.ReadByte();
-                        if (useNewMobileIncoming.Value || (graphic & 0x8000) != 0)
-                            item.Hue = p.ReadUShort();
+                if (useNewMobileIncoming.Value)
+                    item.Graphic = graphic;
+                else if (usePostSAChanges.Value)
+                    item.Graphic = (ushort)(graphic & 0x7FFF);
+                else
+                    item.Graphic = (ushort)(graphic & 0x3FFF);
 
-                        if (useNewMobileIncoming.Value)
-                            item.Graphic = graphic;
-                        else if (usePostSAChanges.Value)
-                            item.Graphic = (ushort)(graphic & 0x7FFF);
-                        else
-                            item.Graphic = (ushort)(graphic & 0x3FFF);
-
-                        item.Container = mobile;
-                        mobile.AddItem(item);
-                    }
-                    item.ProcessDelta();
-                }
+                item.Container = mobile;
+                mobile.AddItem(item);
+                item.ProcessDelta();
             }
             mobile.ProcessDelta();
             ProcessDelta();
@@ -66,15 +57,12 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
                 return;
-            lock (mobile.SyncRoot)
-            {
-                mobile.HitsMax = p.ReadUShort();
-                mobile.Hits = p.ReadUShort();
-                mobile.ManaMax = p.ReadUShort();
-                mobile.Mana = p.ReadUShort();
-                mobile.StaminaMax = p.ReadUShort();
-                mobile.Stamina = p.ReadUShort();
-            }
+            mobile.HitsMax = p.ReadUShort();
+            mobile.Hits = p.ReadUShort();
+            mobile.ManaMax = p.ReadUShort();
+            mobile.Mana = p.ReadUShort();
+            mobile.StaminaMax = p.ReadUShort();
+            mobile.Stamina = p.ReadUShort();
             mobile.ProcessDelta();
         }
 
@@ -83,11 +71,8 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
                 return;
-            lock (mobile.SyncRoot)
-            {
-                mobile.HitsMax = p.ReadUShort();
-                mobile.Hits = p.ReadUShort();
-            }
+            mobile.HitsMax = p.ReadUShort();
+            mobile.Hits = p.ReadUShort();
             mobile.ProcessDelta();
         }
 
@@ -96,11 +81,8 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
                 return;
-            lock (mobile.SyncRoot)
-            {
-                mobile.ManaMax = p.ReadUShort();
-                mobile.Mana = p.ReadUShort();
-            }
+            mobile.ManaMax = p.ReadUShort();
+            mobile.Mana = p.ReadUShort();
             mobile.ProcessDelta();
         }
 
@@ -109,11 +91,8 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
                 return;
-            lock (mobile.SyncRoot)
-            {
-                mobile.StaminaMax = p.ReadUShort();
-                mobile.Stamina = p.ReadUShort();
-            }
+            mobile.StaminaMax = p.ReadUShort();
+            mobile.Stamina = p.ReadUShort();
             mobile.ProcessDelta();
         }
 
@@ -123,57 +102,53 @@ namespace UOInterface
             if (!mobile.IsValid)
                 throw new Exception("OnMobileStatus - !mobile.IsValid");//does this happen?
 
-            lock (mobile.SyncRoot)
+            mobile.Name = p.ReadStringAscii(30);
+            mobile.Hits = p.ReadUShort();
+            mobile.HitsMax = p.ReadUShort();
+            mobile.Renamable = p.ReadBool();
+
+            byte type = p.ReadByte();
+            if (type > 0)
             {
-                mobile.Name = p.ReadStringAscii(30);
-                mobile.Hits = p.ReadUShort();
-                mobile.HitsMax = p.ReadUShort();
-                mobile.Renamable = p.ReadBool();
-
-                byte type = p.ReadByte();
-                if (type > 0)
-                {
-                    Player.Female = p.ReadBool();
-                    Player.Strength = p.ReadUShort();
-                    Player.Dexterity = p.ReadUShort();
-                    Player.Intelligence = p.ReadUShort();
-                    Player.Stamina = p.ReadUShort();
-                    Player.StaminaMax = p.ReadUShort();
-                    Player.Mana = p.ReadUShort();
-                    Player.ManaMax = p.ReadUShort();
-                    Player.Gold = p.ReadUInt();
-                    Player.ResistPhysical = p.ReadUShort();
-                    Player.Weight = p.ReadUShort();
-                }
-
-                if (type >= 5)//ML
-                {
-                    Player.WeightMax = p.ReadUShort();
-                    p.Skip(1);
-                }
-
-                if (type >= 2)//T2A
-                    p.Skip(2);
-
-                if (type >= 3)//Renaissance
-                {
-                    Player.Followers = p.ReadByte();
-                    Player.FollowersMax = p.ReadByte();
-                }
-
-                if (type >= 4)//AOS
-                {
-                    Player.ResistFire = p.ReadUShort();
-                    Player.ResistCold = p.ReadUShort();
-                    Player.ResistPoison = p.ReadUShort();
-                    Player.ResistEnergy = p.ReadUShort();
-                    Player.Luck = p.ReadUShort();
-                    Player.DamageMin = p.ReadUShort();
-                    Player.DamageMax = p.ReadUShort();
-                    Player.TithingPoints = p.ReadUInt();
-                }
+                Player.Female = p.ReadBool();
+                Player.Strength = p.ReadUShort();
+                Player.Dexterity = p.ReadUShort();
+                Player.Intelligence = p.ReadUShort();
+                Player.Stamina = p.ReadUShort();
+                Player.StaminaMax = p.ReadUShort();
+                Player.Mana = p.ReadUShort();
+                Player.ManaMax = p.ReadUShort();
+                Player.Gold = p.ReadUInt();
+                Player.ResistPhysical = p.ReadUShort();
+                Player.Weight = p.ReadUShort();
             }
-            mobile.ProcessDelta();
+
+            if (type >= 5)//ML
+            {
+                Player.WeightMax = p.ReadUShort();
+                p.Skip(1);
+            }
+
+            if (type >= 2)//T2A
+                p.Skip(2);
+
+            if (type >= 3)//Renaissance
+            {
+                Player.Followers = p.ReadByte();
+                Player.FollowersMax = p.ReadByte();
+            }
+
+            if (type >= 4)//AOS
+            {
+                Player.ResistFire = p.ReadUShort();
+                Player.ResistCold = p.ReadUShort();
+                Player.ResistPoison = p.ReadUShort();
+                Player.ResistEnergy = p.ReadUShort();
+                Player.Luck = p.ReadUShort();
+                Player.DamageMin = p.ReadUShort();
+                Player.DamageMax = p.ReadUShort();
+                Player.TithingPoints = p.ReadUInt();
+            }
         }
 
         private static void OnMobileHealthbar(Packet p)//0x17
@@ -193,8 +168,7 @@ namespace UOInterface
             else
                 return;
 
-            lock (mobile.SyncRoot)
-                mobile.Flags = p.ReadBool() ? mobile.Flags | flag : mobile.Flags & ~flag;
+            mobile.Flags = p.ReadBool() ? mobile.Flags | flag : mobile.Flags & ~flag;
             mobile.ProcessDelta();
         }
     }

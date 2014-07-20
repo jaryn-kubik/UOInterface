@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using UOInterface.Network;
 
 namespace UOInterface
@@ -11,16 +10,12 @@ namespace UOInterface
             Clear();
             mobilesToAdd.Add(Player = new PlayerMobile(p.ReadUInt()));
             p.Skip(4);//unknown
-
-            lock (Player.SyncRoot)
-            {
-                Player.Graphic = p.ReadUShort();
-                Player.Position = new Position(p.ReadUShort(), p.ReadUShort(), (sbyte)p.ReadUShort());
-                Player.Direction = (Direction)p.ReadByte();
-                //p.Skip(9);//unknown
-                //p.ReadUShort();//map width
-                //p.ReadUShort();//map height
-            }
+            Player.Graphic = p.ReadUShort();
+            Player.Position = new Position(p.ReadUShort(), p.ReadUShort(), (sbyte)p.ReadUShort());
+            Player.Direction = (Direction)p.ReadByte();
+            //p.Skip(9);//unknown
+            //p.ReadUShort();//map width
+            //p.ReadUShort();//map height
             Player.ProcessDelta();
             ProcessDelta();
         }
@@ -31,32 +26,58 @@ namespace UOInterface
                 throw new Exception("OnMobileStatus");//does this happen?
             movementQueue.Clear();
 
-            lock (Player.SyncRoot)
-            {
-                Player.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
-                Player.Hue = p.ReadUShort();
-                Player.Flags = (UOFlags)p.ReadByte();
+            Player.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+            Player.Hue = p.ReadUShort();
+            Player.Flags = (UOFlags)p.ReadByte();
 
-                ushort x = p.ReadUShort();
-                ushort y = p.ReadUShort();
-                p.Skip(2);//unknown
-                Player.Direction = (Direction)p.ReadByte();
-                Player.Position = new Position(x, y, p.ReadSByte());
-            }
+            ushort x = p.ReadUShort();
+            ushort y = p.ReadUShort();
+            p.Skip(2);//unknown
+            Player.Direction = (Direction)p.ReadByte();
+            Player.Position = new Position(x, y, p.ReadSByte());
+
             OnPlayerMoved();
             Player.ProcessDelta();
         }
 
-        private static void OnWarMode(Packet packet)//0x72
-        { Player.WarMode = packet.ReadBool(); }
-
-        private static void OnPlayerMoved()
+        private static void OnWarMode(Packet p) //0x72
         {
-            foreach (Mobile m in Mobiles.Where(m => m.Distance > 20 && !party.Contains(m)))
-                RemoveMobile(m);
-            foreach (Item i in Ground.Where(i => i.Distance > 20))
-                RemoveItem(i);
-            ProcessDelta();
+            Player.WarMode = p.ReadBool();
+            Player.ProcessDelta();
+        }
+
+        private static void OnSkillUpdate(Packet p)//0x3A
+        {
+            ushort id;
+            switch (p.ReadByte())
+            {
+                case 0:
+                    while ((id = p.ReadUShort()) > 0)
+                        Player.UpdateSkill(id - 1, p.ReadUShort(), p.ReadUShort(), (SkillLock)p.ReadByte(), 100);
+                    break;
+
+                case 2:
+                    while ((id = p.ReadUShort()) > 0)
+                        Player.UpdateSkill(id - 1, p.ReadUShort(), p.ReadUShort(), (SkillLock)p.ReadByte(), p.ReadUShort());
+                    break;
+
+                case 0xDF:
+                    id = p.ReadUShort();
+                    Player.UpdateSkill(id, p.ReadUShort(), p.ReadUShort(), (SkillLock)p.ReadByte(), p.ReadUShort());
+                    break;
+
+                case 0xFF:
+                    id = p.ReadUShort();
+                    Player.UpdateSkill(id, p.ReadUShort(), p.ReadUShort(), (SkillLock)p.ReadByte(), 100);
+                    break;
+            }
+            Player.ProcessDelta();
+        }
+
+        private static void OnChangeSkillLock(Packet p)//0x3A
+        {
+            Player.UpdateSkillLock(p.ReadUShort(), (SkillLock)p.ReadByte());
+            Player.ProcessDelta();
         }
     }
 }

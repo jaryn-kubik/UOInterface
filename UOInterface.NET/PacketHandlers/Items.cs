@@ -12,17 +12,14 @@ namespace UOInterface
         private static void ReadContainerContent(Packet p)
         {
             Item item = GetOrCreateItem(p.ReadUInt());
-            lock (item.SyncRoot)
-            {
-                item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
-                item.Amount = Math.Max(p.ReadUShort(), (ushort)1);
-                item.Position = new Position(p.ReadUShort(), p.ReadUShort());
-                if (usePostKRPackets.Value)
-                    p.ReadByte(); //gridnumber - useless?
+            item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+            item.Amount = Math.Max(p.ReadUShort(), (ushort)1);
+            item.Position = new Position(p.ReadUShort(), p.ReadUShort());
+            if (usePostKRPackets.Value)
+                p.ReadByte(); //gridnumber - useless?
 
-                item.Container = p.ReadUInt();
-                item.Hue = p.ReadUShort();
-            }
+            item.Container = p.ReadUInt();
+            item.Hue = p.ReadUShort();
             item.ProcessDelta();
             toUpdate.Add(item);
         }
@@ -44,13 +41,10 @@ namespace UOInterface
         private static void OnEquipUpdate(Packet p)//0x2E
         {
             Item item = GetOrCreateItem(p.ReadUInt());
-            lock (item.SyncRoot)
-            {
-                item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
-                item.Layer = (Layer)p.ReadByte();
-                item.Container = p.ReadUInt();
-                item.Hue = p.ReadUShort();
-            }
+            item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
+            item.Layer = (Layer)p.ReadByte();
+            item.Container = p.ReadUInt();
+            item.Hue = p.ReadUShort();
             item.ProcessDelta();
             toUpdate.Add(item);
             ProcessDelta();
@@ -60,32 +54,30 @@ namespace UOInterface
         {
             uint serial = p.ReadUInt();
             Item item = GetOrCreateItem(serial);
-            lock (item.SyncRoot)
-            {
-                ushort graphic = (ushort)(p.ReadUShort() & 0x3FFF);
-                item.Amount = (serial & 0x80000000) != 0 ? p.ReadUShort() : (ushort)1;
 
-                if ((graphic & 0x8000) != 0)
-                    item.Graphic = (ushort)(graphic & 0x7FFF + p.ReadSByte());
-                else
-                    item.Graphic = (ushort)(graphic & 0x7FFF);
+            ushort graphic = (ushort)(p.ReadUShort() & 0x3FFF);
+            item.Amount = (serial & 0x80000000) != 0 ? p.ReadUShort() : (ushort)1;
 
-                ushort x = p.ReadUShort();
-                ushort y = p.ReadUShort();
+            if ((graphic & 0x8000) != 0)
+                item.Graphic = (ushort)(graphic & 0x7FFF + p.ReadSByte());
+            else
+                item.Graphic = (ushort)(graphic & 0x7FFF);
 
-                if ((x & 0x8000) != 0)
-                    item.Direction = (Direction)p.ReadByte();//wtf???
+            ushort x = p.ReadUShort();
+            ushort y = p.ReadUShort();
 
-                item.Position = new Position((ushort)(x & 0x7FFF), (ushort)(y & 0x3FFF), p.ReadSByte());
+            if ((x & 0x8000) != 0)
+                item.Direction = (Direction)p.ReadByte();//wtf???
 
-                if ((y & 0x8000) != 0)
-                    item.Hue = p.ReadUShort();
+            item.Position = new Position((ushort)(x & 0x7FFF), (ushort)(y & 0x3FFF), p.ReadSByte());
 
-                if ((y & 0x4000) != 0)
-                    item.Flags = (UOFlags)p.ReadByte();
+            if ((y & 0x8000) != 0)
+                item.Hue = p.ReadUShort();
 
-                item.Container = Serial.Invalid;
-            }
+            if ((y & 0x4000) != 0)
+                item.Flags = (UOFlags)p.ReadByte();
+
+            item.Container = Serial.Invalid;
             item.ProcessDelta();
             ProcessDelta();
         }
@@ -96,28 +88,26 @@ namespace UOInterface
 
             byte type = p.ReadByte();
             Item item = GetOrCreateItem(p.ReadUInt());
-            lock (item.SyncRoot)
-            {
-                ushort g = p.ReadUShort();
-                if (type == 2)
-                    g |= 0x4000;
-                item.Graphic = g;
-                item.Direction = (Direction)p.ReadByte();
 
-                item.Amount = p.ReadUShort();
-                p.Skip(2);//amount again? wtf???
+            ushort g = p.ReadUShort();
+            if (type == 2)
+                g |= 0x4000;
+            item.Graphic = g;
+            item.Direction = (Direction)p.ReadByte();
 
-                item.Position = new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte());
-                p.Skip(1);//light? wtf?
+            item.Amount = p.ReadUShort();
+            p.Skip(2);//amount again? wtf???
 
-                item.Hue = p.ReadUShort();
-                item.Flags = (UOFlags)p.ReadByte();
+            item.Position = new Position(p.ReadUShort(), p.ReadUShort(), p.ReadSByte());
+            p.Skip(1);//light? wtf?
 
-                if (usePostHSChanges.Value)
-                    p.ReadUShort();//unknown
+            item.Hue = p.ReadUShort();
+            item.Flags = (UOFlags)p.ReadByte();
 
-                item.Container = Serial.Invalid;
-            }
+            if (usePostHSChanges.Value)
+                p.ReadUShort();//unknown
+
+            item.Container = Serial.Invalid;
             item.ProcessDelta();
             ProcessDelta();
         }

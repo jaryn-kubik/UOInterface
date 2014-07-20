@@ -11,6 +11,8 @@ namespace UOInterface
             Handlers.ToClient.Add(0x1B, OnLoginConfirm, Priority.High);
             Handlers.ToClient.Add(0x20, OnPlayerUpdate, Priority.High);
             Handlers.ToClient.Add(0x72, OnWarMode, Priority.High);
+            Handlers.ToClient.Add(0x3A, OnSkillUpdate, Priority.High);
+            Handlers.ToServer.Add(0x3A, OnChangeSkillLock, Priority.High);
 
             //mobiles
             Handlers.ToClient.Add(0x77, OnMobileMoving, Priority.High);

@@ -9,12 +9,9 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
                 return;
-            lock (mobile.SyncRoot)
-            {
-                mobile.Graphic = p.ReadUShort();
-                p.Skip(5);
-                mobile.Name = p.ReadStringAscii(30);
-            }
+            mobile.Graphic = p.ReadUShort();
+            p.Skip(5);
+            mobile.Name = p.ReadStringAscii(30);
             mobile.ProcessDelta();
         }
 
@@ -23,12 +20,9 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
                 return;
-            lock (mobile.SyncRoot)
-            {
-                mobile.Graphic = p.ReadUShort();
-                p.Skip(9);
-                mobile.Name = p.ReadStringAscii(30);
-            }
+            mobile.Graphic = p.ReadUShort();
+            p.Skip(9);
+            mobile.Name = p.ReadStringAscii(30);
             mobile.ProcessDelta();
         }
 
@@ -37,12 +31,9 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
                 return;
-            lock (mobile.SyncRoot)
-            {
-                mobile.Graphic = p.ReadUShort();
-                p.Skip(9);
-                mobile.Name = p.ReadStringAscii(30);
-            }
+            mobile.Graphic = p.ReadUShort();
+            p.Skip(9);
+            mobile.Name = p.ReadStringAscii(30);
             mobile.ProcessDelta();
         }
 
@@ -51,12 +42,9 @@ namespace UOInterface
             Mobile mobile = GetMobile(p.ReadUInt());
             if (!mobile.IsValid)
                 return;
-            lock (mobile.SyncRoot)
-            {
-                mobile.Graphic = p.ReadUShort();
-                p.Skip(10);
-                mobile.Name = p.ReadStringAscii(30);
-            }
+            mobile.Graphic = p.ReadUShort();
+            p.Skip(10);
+            mobile.Name = p.ReadStringAscii(30);
             mobile.ProcessDelta();
         }
     }

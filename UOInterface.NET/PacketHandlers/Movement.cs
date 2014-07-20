@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UOInterface.Network;
 
 namespace UOInterface
@@ -16,31 +17,24 @@ namespace UOInterface
         private static void OnMovementRejected(Packet p)//0x21
         {
             movementQueue.Clear();
-            lock (Player.SyncRoot)
-            {
-                ushort x = p.ReadUShort(2);
-                ushort y = p.ReadUShort();
-                Player.Direction = (Direction)p.ReadByte();
-                Player.Position = new Position(x, y, p.ReadSByte());
-            }
+            ushort x = p.ReadUShort(2);
+            ushort y = p.ReadUShort();
+            Player.Direction = (Direction)p.ReadByte();
+            Player.Position = new Position(x, y, p.ReadSByte());
             Player.ProcessDelta();
         }
 
         private static void OnMovementAccepted(Packet p)//0x22
         {
-            lock (Player.SyncRoot)
-            {
-                Player.Notoriety = (Notoriety)p.ReadByte(2);
-                if (movementQueue.Count > 0)
-                    ProcessMove(movementQueue.Dequeue());
-            }
+            Player.Notoriety = (Notoriety)p.ReadByte(2);
+            if (movementQueue.Count > 0)
+                ProcessMove(movementQueue.Dequeue());
             Player.ProcessDelta();
         }
 
         private static void OnMovementDemand(Packet p) //0x97
         {
-            lock (Player.SyncRoot)
-                ProcessMove((Direction)p.ReadByte());
+            ProcessMove((Direction)p.ReadByte());
             Player.ProcessDelta();
         }
 
@@ -88,6 +82,15 @@ namespace UOInterface
             }
             Player.Position = new Position(x, y, p.Z);
             OnPlayerMoved();
+        }
+
+        private static void OnPlayerMoved()
+        {
+            foreach (Mobile m in Mobiles.Where(m => m.Distance > 20 && !party.Contains(m)))
+                RemoveMobile(m);
+            foreach (Item i in Ground.Where(i => i.Distance > 20))
+                RemoveItem(i);
+            ProcessDelta();
         }
     }
 }

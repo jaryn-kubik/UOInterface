@@ -20,7 +20,7 @@ namespace UOInterface
 
         public ushort Hits
         {
-            get { lock (syncRoot) return hits; }
+            get { return hits; }
             internal set
             {
                 if (hits != value)
@@ -33,7 +33,7 @@ namespace UOInterface
 
         public ushort HitsMax
         {
-            get { lock (syncRoot) return hitsMax; }
+            get { return hitsMax; }
             internal set
             {
                 if (hitsMax != value)
@@ -46,7 +46,7 @@ namespace UOInterface
 
         public ushort Mana
         {
-            get { lock (syncRoot) return mana; }
+            get { return mana; }
             internal set
             {
                 if (mana != value)
@@ -59,7 +59,7 @@ namespace UOInterface
 
         public ushort ManaMax
         {
-            get { lock (syncRoot) return manaMax; }
+            get { return manaMax; }
             internal set
             {
                 if (manaMax != value)
@@ -72,7 +72,7 @@ namespace UOInterface
 
         public ushort Stamina
         {
-            get { lock (syncRoot) return stamina; }
+            get { return stamina; }
             internal set
             {
                 if (stamina != value)
@@ -85,7 +85,7 @@ namespace UOInterface
 
         public ushort StaminaMax
         {
-            get { lock (syncRoot) return staminaMax; }
+            get { return staminaMax; }
             internal set
             {
                 if (staminaMax != value)
@@ -98,7 +98,7 @@ namespace UOInterface
 
         public Notoriety Notoriety
         {
-            get { lock (syncRoot) return notoriety; }
+            get { return notoriety; }
             internal set
             {
                 if (notoriety != value)
@@ -111,7 +111,7 @@ namespace UOInterface
 
         public bool WarMode
         {
-            get { lock (syncRoot) return warMode; }
+            get { return warMode; }
             internal set
             {
                 if (warMode != value)
@@ -124,7 +124,7 @@ namespace UOInterface
 
         public bool Renamable
         {
-            get { lock (syncRoot) return renamable; }
+            get { return renamable; }
             internal set
             {
                 if (renamable != value)
