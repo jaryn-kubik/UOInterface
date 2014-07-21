@@ -12,7 +12,8 @@ namespace UOInterface
             mobile.Graphic = p.ReadUShort();
             p.Skip(5);
             mobile.Name = p.ReadStringAscii(30);
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
 
         private static void OnUnicodeMessage(Packet p)//0xAE
@@ -23,7 +24,8 @@ namespace UOInterface
             mobile.Graphic = p.ReadUShort();
             p.Skip(9);
             mobile.Name = p.ReadStringAscii(30);
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
 
         private static void OnLocalizedMessage(Packet p)//0xC1
@@ -34,7 +36,8 @@ namespace UOInterface
             mobile.Graphic = p.ReadUShort();
             p.Skip(9);
             mobile.Name = p.ReadStringAscii(30);
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
 
         private static void OnLocalizedMessageAffix(Packet p)//0xCC
@@ -45,7 +48,8 @@ namespace UOInterface
             mobile.Graphic = p.ReadUShort();
             p.Skip(10);
             mobile.Name = p.ReadStringAscii(30);
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
     }
 }

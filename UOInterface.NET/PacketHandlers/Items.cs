@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using UOInterface.Network;
 
 namespace UOInterface
@@ -8,7 +7,6 @@ namespace UOInterface
     {
         //sometimes child items are sent before parent containers...
         //no idea why, they like to make things complicated i guess
-        private static readonly HashSet<Item> toUpdate = new HashSet<Item>();
         private static void ReadContainerContent(Packet p)
         {
             Item item = GetOrCreateItem(p.ReadUInt());
@@ -20,8 +18,8 @@ namespace UOInterface
 
             item.Container = p.ReadUInt();
             item.Hue = p.ReadUShort();
-            item.ProcessDelta();
             toUpdate.Add(item);
+            toProcess.Enqueue(item);
         }
 
         private static void OnContainerContentUpdate(Packet p)//0x25
@@ -45,8 +43,8 @@ namespace UOInterface
             item.Layer = (Layer)p.ReadByte();
             item.Container = p.ReadUInt();
             item.Hue = p.ReadUShort();
-            item.ProcessDelta();
             toUpdate.Add(item);
+            toProcess.Enqueue(item);
             ProcessDelta();
         }
 
@@ -78,7 +76,7 @@ namespace UOInterface
                 item.Flags = (UOFlags)p.ReadByte();
 
             item.Container = Serial.Invalid;
-            item.ProcessDelta();
+            toProcess.Enqueue(item);
             ProcessDelta();
         }
 
@@ -108,7 +106,7 @@ namespace UOInterface
                 p.ReadUShort();//unknown
 
             item.Container = Serial.Invalid;
-            item.ProcessDelta();
+            toProcess.Enqueue(item);
             ProcessDelta();
         }
     }

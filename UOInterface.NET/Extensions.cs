@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UOInterface
 {
@@ -21,13 +20,13 @@ namespace UOInterface
 
     public class CollectionChangedEventArgs<T> : EventArgs
     {
-        public CollectionChangedEventArgs(IEnumerable<T> items, IEnumerable<T> removed)
+        public CollectionChangedEventArgs(IReadOnlyList<T> added, IReadOnlyList<T> removed)
         {
-            Added = items.ToArray();
-            Removed = removed.ToArray();
+            Added = added;
+            Removed = removed;
         }
 
-        public IEnumerable<T> Added { get; private set; }
-        public IEnumerable<T> Removed { get; private set; }
+        public IReadOnlyList<T> Added { get; private set; }
+        public IReadOnlyList<T> Removed { get; private set; }
     }
 }

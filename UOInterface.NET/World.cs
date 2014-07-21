@@ -8,12 +8,14 @@ namespace UOInterface
 {
     public static partial class World
     {
-        private static readonly ConcurrentDictionary<Serial, Item> items = new ConcurrentDictionary<Serial, Item>(1, 256);
-        private static readonly ConcurrentDictionary<Serial, Item> ground = new ConcurrentDictionary<Serial, Item>(1, 256);
-        private static readonly ConcurrentDictionary<Serial, Mobile> mobiles = new ConcurrentDictionary<Serial, Mobile>(1, 64);
-        private static readonly List<Item> itemsToAdd = new List<Item>(), itemsRemoved = new List<Item>();
-        private static readonly List<Mobile> mobilesToAdd = new List<Mobile>(), mobilesRemoved = new List<Mobile>();
+        private static readonly ConcurrentDictionary<Serial, Item> items = new ConcurrentDictionary<Serial, Item>(1, 512);
+        private static readonly ConcurrentDictionary<Serial, Item> ground = new ConcurrentDictionary<Serial, Item>(1, 512);
+        private static readonly ConcurrentDictionary<Serial, Mobile> mobiles = new ConcurrentDictionary<Serial, Mobile>(1, 128);
+        private static readonly ConcurrentQueue<Entity> toProcess = new ConcurrentQueue<Entity>();
+        private static readonly HashSet<Item> toUpdate = new HashSet<Item>();
         private static readonly List<Serial> party = new List<Serial>();
+        private static List<Item> itemsToAdd = new List<Item>(64), itemsRemoved = new List<Item>(64);
+        private static List<Mobile> mobilesToAdd = new List<Mobile>(32), mobilesRemoved = new List<Mobile>(32);
 
         public static IEnumerable<Mobile> Mobiles { get { return mobiles.Select(mobile => mobile.Value); } }
         public static IEnumerable<Item> Items { get { return items.Select(item => item.Value); } }
@@ -102,13 +104,10 @@ namespace UOInterface
                 return;
 
             itemsRemoved.Add(item);
-            lock (item.SyncRoot)
-            {
-                foreach (Item i in item.Items)
-                    RemoveItem(i);
-                item.Clear();
-            }
-            item.ProcessDelta();
+            foreach (Item i in item.Items)
+                RemoveItem(i);
+            item.Clear();
+            toProcess.Enqueue(item);
         }
 
         private static void RemoveMobile(Serial serial)
@@ -118,13 +117,10 @@ namespace UOInterface
                 return;
 
             mobilesRemoved.Add(mobile);
-            lock (mobile.SyncRoot)
-            {
-                foreach (Item i in mobile.Items)
-                    RemoveItem(i);
-                mobile.Clear();
-            }
-            mobile.ProcessDelta();
+            foreach (Item i in mobile.Items)
+                RemoveItem(i);
+            mobile.Clear();
+            toProcess.Enqueue(mobile);
         }
 
         private static void ProcessDelta()
@@ -137,7 +133,7 @@ namespace UOInterface
                 {
                     foreach (Item i in group)
                         container.RemoveItem(i);
-                    container.ProcessDelta();
+                    toProcess.Enqueue(container);
                 }
             }
 
@@ -150,8 +146,8 @@ namespace UOInterface
                     (item.Container.IsValid ? items : ground).TryAdd(item.Serial, item);
 
                 itemsChanged = new CollectionChangedEventArgs<Item>(itemsToAdd, itemsRemoved);
-                itemsToAdd.Clear();
-                itemsRemoved.Clear();
+                itemsToAdd = new List<Item>(64);
+                itemsRemoved = new List<Item>(64);
             }
 
             if (mobilesToAdd.Count > 0 || mobilesRemoved.Count > 0)
@@ -160,8 +156,8 @@ namespace UOInterface
                     mobiles.TryAdd(mobile.Serial, mobile);
 
                 mobilesChanged = new CollectionChangedEventArgs<Mobile>(mobilesToAdd, mobilesRemoved);
-                mobilesToAdd.Clear();
-                mobilesRemoved.Clear();
+                mobilesToAdd = new List<Mobile>(32);
+                mobilesRemoved = new List<Mobile>(32);
             }
 
             foreach (IGrouping<Serial, Item> group in toUpdate.GroupBy(i => i.Container))
@@ -174,12 +170,16 @@ namespace UOInterface
                         container.AddItem(i);
                         toUpdate.Remove(i);
                     }
-                    container.ProcessDelta();
+                    toProcess.Enqueue(container);
                 }
             }
 
             Task.Run(() =>
             {
+                Entity entity;
+                while (toProcess.TryDequeue(out entity))
+                    entity.ProcessDelta();
+
                 if (itemsChanged != null)
                     ItemsChanged.Raise(itemsChanged);
                 if (mobilesChanged != null)

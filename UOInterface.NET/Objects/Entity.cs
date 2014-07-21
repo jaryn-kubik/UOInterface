@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace UOInterface
 {
@@ -11,22 +10,6 @@ namespace UOInterface
     {
         public static readonly Entity Invalid = new Entity(Serial.Invalid);
         protected Entity(Serial serial) { Serial = serial; }
-
-        [Flags]
-        protected enum Delta
-        {
-            None = 0,
-            Appearance = (1 << 0),
-            Position = (1 << 1),
-            Attributes = (1 << 2),
-            Ownership = (1 << 3),
-            Hits = (1 << 4),
-            Mana = (1 << 5),
-            Stamina = (1 << 6),
-            Stats = (1 << 7),
-            Skills = (1 << 8)
-        }
-        protected Delta delta;
 
         private Serial serial;
         private Graphic graphic;
@@ -51,7 +34,7 @@ namespace UOInterface
                 if (graphic != value)
                 {
                     graphic = value;
-                    delta |= Delta.Appearance;
+                    AddDelta(Delta.Appearance);
                 }
             }
         }
@@ -64,7 +47,7 @@ namespace UOInterface
                 if (hue != value)
                 {
                     hue = value;
-                    delta |= Delta.Appearance;
+                    AddDelta(Delta.Appearance);
                 }
             }
         }
@@ -77,7 +60,7 @@ namespace UOInterface
                 if (name != value)
                 {
                     name = value;
-                    delta |= Delta.Appearance;
+                    AddDelta(Delta.Appearance);
                 }
             }
         }
@@ -90,7 +73,7 @@ namespace UOInterface
                 if (position != value)
                 {
                     position = value;
-                    delta |= Delta.Position;
+                    AddDelta(Delta.Position);
                 }
             }
         }
@@ -104,7 +87,7 @@ namespace UOInterface
                 if (direction != value)
                 {
                     direction = value;
-                    delta |= Delta.Position;
+                    AddDelta(Delta.Position);
                 }
             }
         }
@@ -117,47 +100,36 @@ namespace UOInterface
                 if (flags != value)
                 {
                     flags = value;
-                    delta |= Delta.Attributes;
+                    AddDelta(Delta.Attributes);
                 }
             }
         }
 
-        private readonly List<Item> added = new List<Item>(), removed = new List<Item>();
+        private List<Item> added = new List<Item>(32), removed = new List<Item>(32);
         public IEnumerable<Item> Items { get { return items.Select(item => item.Value); } }
         internal void AddItem(Item item)
         {
             if (items.TryAdd(item.Serial, item))
-                added.Add(item);
+                lock (syncRoot)
+                    added.Add(item);
         }
 
         internal void RemoveItem(Item item)
         {
             if (items.TryRemove(item.serial, out item))
-                removed.Add(item);
+                lock (syncRoot)
+                    removed.Add(item);
         }
 
         internal void Clear()
         {
-            removed.AddRange(Items);
+            lock (syncRoot)
+                removed.AddRange(Items);
             items.Clear();
         }
 
         public event EventHandler AppearanceChanged, PositionChanged, AttributesChanged;
         public event EventHandler<CollectionChangedEventArgs<Item>> ItemsChanged;
-        internal void ProcessDelta()
-        {
-            if (added.Count > 0 || removed.Count > 0)
-            {
-                ItemsChanged.Raise(new CollectionChangedEventArgs<Item>(added, removed), this);
-                added.Clear();
-                removed.Clear();
-            }
-
-            Delta d = delta;
-            Task.Run(() => OnProcessDelta(d));
-            delta = Delta.None;
-        }
-
         protected virtual void OnProcessDelta(Delta d)
         {
             if (d.HasFlag(Delta.Appearance))
@@ -168,6 +140,45 @@ namespace UOInterface
 
             if (d.HasFlag(Delta.Attributes))
                 AttributesChanged.Raise(this);
+        }
+
+        private static readonly object syncRoot = new object();
+        private Delta delta;
+        protected void AddDelta(Delta d) { lock (syncRoot)delta |= d; }
+        internal void ProcessDelta()
+        {
+            Delta d;
+            CollectionChangedEventArgs<Item> changed = null;
+            lock (syncRoot)
+            {
+                d = delta;
+                delta = Delta.None;
+                if (added.Count > 0 || removed.Count > 0)
+                {
+                    changed = new CollectionChangedEventArgs<Item>(added, removed);
+                    added = new List<Item>(32);
+                    removed = new List<Item>(32);
+                }
+            }
+
+            if (changed != null)
+                ItemsChanged.Raise(changed, this);
+            OnProcessDelta(d);
+        }
+
+        [Flags]
+        protected enum Delta
+        {
+            None = 0,
+            Appearance = (1 << 0),
+            Position = (1 << 1),
+            Attributes = (1 << 2),
+            Ownership = (1 << 3),
+            Hits = (1 << 4),
+            Mana = (1 << 5),
+            Stamina = (1 << 6),
+            Stats = (1 << 7),
+            Skills = (1 << 8)
         }
 
         public static implicit operator Serial(Entity entity) { return entity.Serial; }

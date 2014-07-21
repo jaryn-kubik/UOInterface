@@ -14,7 +14,7 @@ namespace UOInterface
             mobile.Hue = p.ReadUShort();
             mobile.Flags = (UOFlags)p.ReadByte();
             mobile.Notoriety = (Notoriety)p.ReadByte();
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
             ProcessDelta();
         }
 
@@ -46,9 +46,9 @@ namespace UOInterface
 
                 item.Container = mobile;
                 mobile.AddItem(item);
-                item.ProcessDelta();
+                toProcess.Enqueue(item);
             }
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
             ProcessDelta();
         }
 
@@ -63,7 +63,8 @@ namespace UOInterface
             mobile.Mana = p.ReadUShort();
             mobile.StaminaMax = p.ReadUShort();
             mobile.Stamina = p.ReadUShort();
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
 
         private static void OnMobileHits(Packet p)//0xA1
@@ -73,7 +74,8 @@ namespace UOInterface
                 return;
             mobile.HitsMax = p.ReadUShort();
             mobile.Hits = p.ReadUShort();
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
 
         private static void OnMobileMana(Packet p)//0xA2
@@ -83,7 +85,8 @@ namespace UOInterface
                 return;
             mobile.ManaMax = p.ReadUShort();
             mobile.Mana = p.ReadUShort();
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
 
         private static void OnMobileStamina(Packet p)//0xA3
@@ -93,7 +96,8 @@ namespace UOInterface
                 return;
             mobile.StaminaMax = p.ReadUShort();
             mobile.Stamina = p.ReadUShort();
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
 
         private static void OnMobileStatus(Packet p)//0x11
@@ -149,6 +153,9 @@ namespace UOInterface
                 Player.DamageMax = p.ReadUShort();
                 Player.TithingPoints = p.ReadUInt();
             }
+
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
 
         private static void OnMobileHealthbar(Packet p)//0x17
@@ -169,7 +176,8 @@ namespace UOInterface
                 return;
 
             mobile.Flags = p.ReadBool() ? mobile.Flags | flag : mobile.Flags & ~flag;
-            mobile.ProcessDelta();
+            toProcess.Enqueue(mobile);
+            ProcessDelta();
         }
     }
 }

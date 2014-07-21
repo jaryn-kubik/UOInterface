@@ -16,7 +16,7 @@ namespace UOInterface
             //p.Skip(9);//unknown
             //p.ReadUShort();//map width
             //p.ReadUShort();//map height
-            Player.ProcessDelta();
+            toProcess.Enqueue(Player);
             ProcessDelta();
         }
 
@@ -37,13 +37,15 @@ namespace UOInterface
             Player.Position = new Position(x, y, p.ReadSByte());
 
             OnPlayerMoved();
-            Player.ProcessDelta();
+            toProcess.Enqueue(Player);
+            ProcessDelta();
         }
 
         private static void OnWarMode(Packet p) //0x72
         {
             Player.WarMode = p.ReadBool();
-            Player.ProcessDelta();
+            toProcess.Enqueue(Player);
+            ProcessDelta();
         }
 
         private static void OnSkillUpdate(Packet p)//0x3A
@@ -71,13 +73,15 @@ namespace UOInterface
                     Player.UpdateSkill(id, p.ReadUShort(), p.ReadUShort(), (SkillLock)p.ReadByte(), 100);
                     break;
             }
-            Player.ProcessDelta();
+            toProcess.Enqueue(Player);
+            ProcessDelta();
         }
 
         private static void OnChangeSkillLock(Packet p)//0x3A
         {
             Player.UpdateSkillLock(p.ReadUShort(), (SkillLock)p.ReadByte());
-            Player.ProcessDelta();
+            toProcess.Enqueue(Player);
+            ProcessDelta();
         }
     }
 }

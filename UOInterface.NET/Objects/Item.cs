@@ -20,7 +20,7 @@ namespace UOInterface
                 if (amount != value)
                 {
                     amount = value;
-                    delta |= Delta.Attributes;
+                    AddDelta(Delta.Attributes);
                 }
             }
         }
@@ -33,7 +33,7 @@ namespace UOInterface
                 if (container != value)
                 {
                     container = value;
-                    delta |= Delta.Ownership;
+                    AddDelta(Delta.Ownership);
                 }
             }
         }
@@ -46,7 +46,7 @@ namespace UOInterface
                 if (layer != value)
                 {
                     layer = value;
-                    delta |= Delta.Ownership;
+                    AddDelta(Delta.Ownership);
                 }
             }
         }
