@@ -30,6 +30,7 @@ namespace UOInterface
             Handlers.ToClient.Add(0x3C, OnContainerContent, Priority.High);
             Handlers.ToClient.Add(0x2E, OnEquipUpdate, Priority.High);
             Handlers.ToClient.Add(0xF3, OnWorldItemSA, Priority.High);
+            Handlers.ToClient.Add(0xD6, OnProperties, Priority.High);
 
             //movement
             Handlers.ToServer.Add(0x02, OnMovementRequest, Priority.High);

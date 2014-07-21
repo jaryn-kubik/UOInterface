@@ -117,10 +117,10 @@ namespace UOInterface.Network
         public string ReadStringUnicode(int length) { return ReadStringUnicode(Position, length); }
         public string ReadStringUnicode(int index, int length)
         {
-            EnsureSize(index, length * 2);
-            StringBuilder sb = new StringBuilder(length);
+            EnsureSize(index, length);
+            StringBuilder sb = new StringBuilder(length / 2);
             int c;
-            while (index < Position && (c = data[index++] << 8 | data[index++]) != '\0')
+            while (index < Position && (c = data[index++] | data[index++] << 8) != '\0')
                 sb.Append((char)c);
             return sb.ToString();
         }
@@ -131,7 +131,7 @@ namespace UOInterface.Network
             EnsureSize(index, 2);
             StringBuilder sb = new StringBuilder();
             int c;
-            while (index < Length - 2 && (c = data[index++] << 8 | data[index++]) != '\0')
+            while (index < Length - 2 && (c = data[index++] | data[index++] << 8) != '\0')
                 sb.Append((char)c);
             Position = index;
             return sb.ToString();
@@ -204,8 +204,8 @@ namespace UOInterface.Network
             EnsureSize(index, (value.Length + 1) * 2);
             foreach (char c in value)
             {
-                data[index++] = (byte)(c >> 8);
                 data[index++] = (byte)(c);
+                data[index++] = (byte)(c >> 8);
             }
             data[index++] = data[index] = 0;
             Changed = true;
@@ -214,13 +214,13 @@ namespace UOInterface.Network
         public void WriteStringUnicode(string value, int length) { WriteStringUnicode(Position, value, length); }
         public void WriteStringUnicode(int index, string value, int length)
         {
-            if (value.Length > length)
+            if (value.Length > length / 2)
                 throw new ArgumentOutOfRangeException("value");
-            EnsureSize(index, length * 2);
+            EnsureSize(index, length);
             foreach (char c in value)
             {
-                data[index++] = (byte)(c >> 8);
                 data[index++] = (byte)(c);
+                data[index++] = (byte)(c >> 8);
             }
             while (index < Position)
                 data[index++] = 0;

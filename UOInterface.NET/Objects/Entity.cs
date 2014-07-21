@@ -18,6 +18,7 @@ namespace UOInterface
         private Position position;
         private Direction direction;
         private UOFlags flags;
+        private readonly ConcurrentDictionary<int, UOProperty> properties = new ConcurrentDictionary<int, UOProperty>(1, 16);
         private readonly ConcurrentDictionary<Serial, Item> items = new ConcurrentDictionary<Serial, Item>(1, 32);
 
         public Serial Serial
@@ -105,6 +106,16 @@ namespace UOInterface
             }
         }
 
+        public IEnumerable<UOProperty> Properties { get { return properties.Select(p => p.Value); } }
+        internal void UpdateProperties(IEnumerable<UOProperty> props)
+        {
+            properties.Clear();
+            int i = 0;
+            foreach (UOProperty p in props)
+                properties.TryAdd(i++, p);
+            AddDelta(Delta.Properties);
+        }
+
         private List<Item> added = new List<Item>(32), removed = new List<Item>(32);
         public IEnumerable<Item> Items { get { return items.Select(item => item.Value); } }
         internal void AddItem(Item item)
@@ -128,7 +139,7 @@ namespace UOInterface
             items.Clear();
         }
 
-        public event EventHandler AppearanceChanged, PositionChanged, AttributesChanged;
+        public event EventHandler AppearanceChanged, PositionChanged, AttributesChanged, PropertiesChanged;
         public event EventHandler<CollectionChangedEventArgs<Item>> ItemsChanged;
         protected virtual void OnProcessDelta(Delta d)
         {
@@ -140,6 +151,9 @@ namespace UOInterface
 
             if (d.HasFlag(Delta.Attributes))
                 AttributesChanged.Raise(this);
+
+            if (d.HasFlag(Delta.Properties))
+                PropertiesChanged.Raise(this);
         }
 
         private static readonly object syncRoot = new object();
@@ -178,7 +192,8 @@ namespace UOInterface
             Mana = (1 << 5),
             Stamina = (1 << 6),
             Stats = (1 << 7),
-            Skills = (1 << 8)
+            Skills = (1 << 8),
+            Properties = (1 << 9)
         }
 
         public static implicit operator Serial(Entity entity) { return entity.Serial; }
@@ -198,6 +213,14 @@ namespace UOInterface
             sb.AppendFormat("Direction: {0}\n", Direction);
             sb.AppendFormat("Flags: {0}", Flags);
             ToString(sb);
+            sb.AppendLine("\n\nProperties:");
+            foreach (UOProperty p in Properties)
+            {
+                if (string.IsNullOrEmpty(p.Args))
+                    sb.AppendFormat("{0}\n", p.Cliloc);
+                else
+                    sb.AppendFormat("{0} - {1}\n", p.Cliloc, p.Args.Trim());
+            }
             return sb.ToString();
         }
 
@@ -206,5 +229,18 @@ namespace UOInterface
 
         public int DistanceTo(Entity entity) { return position.DistanceTo(entity.position); }
         public int Distance { get { return DistanceTo(World.Player); } }
+
+        public struct UOProperty
+        {
+            public uint Cliloc { get; private set; }
+            public string Args { get; private set; }
+
+            internal UOProperty(uint cliloc, string args)
+                : this()
+            {
+                Cliloc = cliloc;
+                Args = args;
+            }
+        }
     }
 }

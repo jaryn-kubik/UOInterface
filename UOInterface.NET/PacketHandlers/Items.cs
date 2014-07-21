@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UOInterface.Network;
 
 namespace UOInterface
@@ -108,6 +109,29 @@ namespace UOInterface
             item.Container = Serial.Invalid;
             toProcess.Enqueue(item);
             ProcessDelta();
+        }
+
+        private static void OnProperties(Packet p) //0xD6
+        {
+            p.Skip(2);
+            Entity entity = GetEntity(p.ReadUInt());
+            if (!entity.IsValid)
+                return;
+            p.Skip(6);
+            entity.UpdateProperties(ReadProperties(p));
+            toProcess.Enqueue(entity);
+            ProcessDelta();
+        }
+
+        private static IEnumerable<Entity.UOProperty> ReadProperties(Packet p)
+        {
+            uint cliloc;
+            while ((cliloc = p.ReadUInt()) != 0)
+            {
+                ushort len = p.ReadUShort();
+                string str = p.ReadStringUnicode(len);
+                yield return new Entity.UOProperty(cliloc, str);
+            }
         }
     }
 }
