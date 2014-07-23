@@ -12,6 +12,7 @@ namespace ObjectBrowser
         {
             MainWindow window = new MainWindow();
 
+            Client.UnhandledException += (s, e) => MessageBox.Show(e.ExceptionObject.ToString(), "Unhandled exception!");
             Client.ServerIP = (uint)IPAddress.Parse("127.0.0.1").Address;
             Client.ServerPort = 2593;
             Client.PatchEncryption = true;

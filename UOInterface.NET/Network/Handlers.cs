@@ -17,55 +17,49 @@ namespace UOInterface.Network
             Client.PacketToServer += ToServer.OnPacket;
         }
 
-        private readonly SortedSet<PacketHandler>[] handlers = new SortedSet<PacketHandler>[0x100];
-        private Handlers() { }
+        private readonly SortedSet<Handler>[] handlers = new SortedSet<Handler>[0x100];
+        private Handlers()
+        {
+            for (int i = 0; i < handlers.Length; i++)
+                handlers[i] = new SortedSet<Handler>();
+        }
 
         public void Add(byte id, Action<Packet> handler, Priority priority = Priority.Normal)
         {
             lock (handlers)
-            {
-                var set = handlers[id] ?? (handlers[id] = new SortedSet<PacketHandler>());
-                set.Add(new PacketHandler(handler, priority));
-            }
+                handlers[id].Add(new Handler(handler, priority));
         }
 
         public void Remove(byte id, Action<Packet> handler)
         {
             lock (handlers)
-                if (handlers[id] != null)
-                    handlers[id].RemoveWhere(p => p.Handler == handler);
+                handlers[id].RemoveWhere(p => p.Callback == handler);
         }
 
         private void OnPacket(object sender, Packet p)
         {
-            //try
-            //{
             lock (handlers)
-                if (handlers[p.Id] != null)
-                    foreach (PacketHandler handler in handlers[p.Id])
-                    {
-                        p.MoveToData();
-                        handler.Handler(p);
-                    }
-
-            //}
-            //catch (Exception ex) { Exception.Raise(ex); }
+                foreach (Handler handler in handlers[p.Id])
+                {
+                    p.MoveToData();
+                    handler.Callback(p);
+                }
         }
 
-        private class PacketHandler : IComparable<PacketHandler>
+        private class Handler : IComparable<Handler>
         {
             private readonly Priority priority;
-            public Action<Packet> Handler { get; private set; }
+            public Action<Packet> Callback { get; private set; }
 
-            public PacketHandler(Action<Packet> handler, Priority priority)
+            public Handler(Action<Packet> callback, Priority priority)
             {
                 this.priority = priority;
-                Handler = handler;
+                Callback = callback;
             }
 
-            public int CompareTo(PacketHandler other)
+            public int CompareTo(Handler other)
             {
-                if (Handler == other.Handler)
+                if (Callback == other.Callback)
                     return 0;
                 int res = priority.CompareTo(other.priority);
                 return res == 0 ? 1 : res;

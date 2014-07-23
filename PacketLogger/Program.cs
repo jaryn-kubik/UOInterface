@@ -10,6 +10,7 @@ namespace PacketLogger
     {
         static void Main()
         {
+            Client.UnhandledException += (s, e) => MessageBox.Show(e.ExceptionObject.ToString(), "Unhandled exception!");
             Client.ServerIP = 0x0100007F;//127.0.0.1
             Client.ServerPort = 2593;
             Client.PatchEncryption = true;

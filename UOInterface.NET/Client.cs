@@ -16,6 +16,7 @@ namespace UOInterface
         public static event EventHandler<bool> FocusChanged, VisibilityChanged;
         public static event EventHandler<UOKeyEventArgs> KeyDown;
         public static event EventHandler<Packet> PacketToClient, PacketToServer;
+        public static event UnhandledExceptionEventHandler UnhandledException;
 
         private static IntPtr bufferOut;
         private static unsafe byte* bufferIn;
@@ -64,7 +65,17 @@ namespace UOInterface
         }
 
         private static readonly OnUOMessage onMessage = OnMessage;
-        private static unsafe uint OnMessage(UOMessage msg, int wParam, int lParam)
+        private static uint OnMessage(UOMessage msg, int wParam, int lParam)
+        {
+            try { return HandleMessage(msg, wParam, lParam); }
+            catch (Exception ex)
+            {
+                OnException(ex);
+                return 0;
+            }
+        }
+
+        private static unsafe uint HandleMessage(UOMessage msg, int wParam, int lParam)
         {
             switch (msg)
             {
@@ -119,6 +130,14 @@ namespace UOInterface
                     break;
             }
             return 0;
+        }
+
+        internal static void OnException(Exception ex)
+        {
+            var handler = UnhandledException;
+            if (handler == null)
+                throw ex;
+            handler(null, new UnhandledExceptionEventArgs(ex, false));
         }
 
         #region UOInterface
