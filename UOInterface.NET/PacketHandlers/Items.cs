@@ -52,7 +52,7 @@ namespace UOInterface
         private static void OnWorldItem(Packet p)//0x1A
         {
             uint serial = p.ReadUInt();
-            Item item = GetOrCreateItem(serial);
+            Item item = GetOrCreateItem(serial & 0x7FFFFFFF);
 
             ushort graphic = (ushort)(p.ReadUShort() & 0x3FFF);
             item.Amount = (serial & 0x80000000) != 0 ? p.ReadUShort() : (ushort)1;
@@ -115,7 +115,7 @@ namespace UOInterface
         {
             p.Skip(2);
             Entity entity = GetEntity(p.ReadUInt());
-            if (!entity.IsValid)
+            if (entity == null)
                 return;
             p.Skip(6);
             entity.UpdateProperties(ReadProperties(p));
@@ -129,7 +129,7 @@ namespace UOInterface
             while ((cliloc = p.ReadUInt()) != 0)
             {
                 ushort len = p.ReadUShort();
-                string str = p.ReadStringUnicode(len);
+                string str = p.ReadUnicodeReversed(len);
                 yield return new Entity.UOProperty(cliloc, str);
             }
         }

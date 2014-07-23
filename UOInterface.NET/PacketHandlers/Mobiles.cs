@@ -1,5 +1,4 @@
-﻿using System;
-using UOInterface.Network;
+﻿using UOInterface.Network;
 
 namespace UOInterface
 {
@@ -55,7 +54,7 @@ namespace UOInterface
         private static void OnMobileAttributes(Packet p)//0x2D
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)
+            if (mobile == null)
                 return;
             mobile.HitsMax = p.ReadUShort();
             mobile.Hits = p.ReadUShort();
@@ -70,7 +69,7 @@ namespace UOInterface
         private static void OnMobileHits(Packet p)//0xA1
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)
+            if (mobile == null)
                 return;
             mobile.HitsMax = p.ReadUShort();
             mobile.Hits = p.ReadUShort();
@@ -81,7 +80,7 @@ namespace UOInterface
         private static void OnMobileMana(Packet p)//0xA2
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)
+            if (mobile == null)
                 return;
             mobile.ManaMax = p.ReadUShort();
             mobile.Mana = p.ReadUShort();
@@ -92,7 +91,7 @@ namespace UOInterface
         private static void OnMobileStamina(Packet p)//0xA3
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)
+            if (mobile == null)
                 return;
             mobile.StaminaMax = p.ReadUShort();
             mobile.Stamina = p.ReadUShort();
@@ -103,10 +102,10 @@ namespace UOInterface
         private static void OnMobileStatus(Packet p)//0x11
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)
-                throw new Exception("OnMobileStatus - !mobile.IsValid");//does this happen?
+            if (mobile == null)
+                return;
 
-            mobile.Name = p.ReadStringAscii(30);
+            mobile.Name = p.ReadASCII(30);
             mobile.Hits = p.ReadUShort();
             mobile.HitsMax = p.ReadUShort();
             mobile.Renamable = p.ReadBool();
@@ -161,7 +160,7 @@ namespace UOInterface
         private static void OnMobileHealthbar(Packet p)//0x17
         {
             Mobile mobile = GetMobile(p.ReadUInt());
-            if (!mobile.IsValid)
+            if (mobile == null)
                 return;
 
             p.Skip(2);//unknown

@@ -40,7 +40,7 @@ namespace UOInterface
             Handlers.ToClient.Add(0x97, OnMovementDemand, Priority.High);
 
             //speech
-            Handlers.ToClient.Add(0x1C, OnAsciiMessage, Priority.High);
+            Handlers.ToClient.Add(0x1C, OnASCIIMessage, Priority.High);
             Handlers.ToClient.Add(0xAE, OnUnicodeMessage, Priority.High);
             Handlers.ToClient.Add(0xC1, OnLocalizedMessage, Priority.High);
             Handlers.ToClient.Add(0xCC, OnLocalizedMessageAffix, Priority.High);

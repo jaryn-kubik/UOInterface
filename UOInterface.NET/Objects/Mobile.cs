@@ -5,7 +5,6 @@ namespace UOInterface
 {
     public class Mobile : Entity
     {
-        public new static readonly Mobile Invalid = new Mobile(Serial.Invalid);
         internal Mobile(Serial serial) : base(serial) { }
 
         private ushort hits;
@@ -151,7 +150,6 @@ namespace UOInterface
                 StaminaChanged.Raise(this);
         }
 
-        public override bool IsValid { get { return Serial.IsMobile; } }
         public override bool Exists { get { return World.ContainsMobile(Serial); } }
         protected override void ToString(StringBuilder sb)
         {

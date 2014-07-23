@@ -1,6 +1,5 @@
 ﻿using System.Windows.Input;
 using UOInterface;
-using UOInterface.Network;
 
 namespace ObjectBrowser
 {
@@ -13,13 +12,19 @@ namespace ObjectBrowser
             Client.Connected += (s, e) => AppendLine("Connected");
             Client.Disconnecting += (s, e) => AppendLine("Disconnecting");
             Client.Closing += (s, e) => AppendLine("Closing");
-
             Client.FocusChanged += (s, e) => AppendLine("FocusChanged - " + e);
             Client.VisibilityChanged += (s, e) => AppendLine("VisibilityChanged - " + e);
-
             Client.KeyDown += Client_KeyDown;
-            Client.PacketToClient += Client_PacketToClient;
-            Client.PacketToServer += Client_PacketToServer;
+
+            World.Cleared += (s, e) => AppendLine("World cleared.");
+            World.MapChanged += (s, e) => AppendLine("Map changed.");
+            World.ItemsChanged += (s, e) => AppendLine(string.Format("ItemsChanged - {0} added, {1} removed.",
+                                                                        e.Added.Count, e.Removed.Count));
+            World.MobilesChanged += (s, e) => AppendLine(string.Format("MobilesChanged - {0} added, {1} removed.",
+                                                                        e.Added.Count, e.Removed.Count));
+
+            Chat.Message += Chat_Message;
+            Chat.LocalizedMessage += Chat_LocalizedMessage;
         }
 
         private void AppendLine(string line)
@@ -39,10 +44,19 @@ namespace ObjectBrowser
             AppendLine(string.Format("KeyDown - {0} - {1}", k, (ModifierKeys)e.Modifiers));
         }
 
-        private void Client_PacketToClient(object sender, Packet p)
-        { AppendLine(string.Format("PacketToClient - {0:X2} - {1} bytes", p.Id, p.Length)); }
+        private void Chat_Message(object sender, UOMessageEventArgs e)
+        {
+            Entity entity = (Entity)sender;
+            AppendLine(string.Format("Message - {0}: '{1}'", entity.Name, e.Text));
+        }
 
-        private void Client_PacketToServer(object sender, Packet p)
-        { AppendLine(string.Format("PacketToServer - {0:X2} - {1} bytes", p.Id, p.Length)); }
+        private void Chat_LocalizedMessage(object sender, UOMessageEventArgs e)
+        {
+            Entity entity = (Entity)sender;
+            if (string.IsNullOrEmpty(e.Text))
+                AppendLine(string.Format("Message - {0}: {1}", entity.Name, e.Cliloc));
+            else
+                AppendLine(string.Format("Message - {0}: {1}, '{2}'", entity.Name, e.Cliloc, e.Text));
+        }
     }
 }

@@ -91,8 +91,8 @@ namespace UOInterface.Network
                             data[index]);
         }
 
-        public string ReadStringAscii(int length) { return ReadStringAscii(Position, length); }
-        public string ReadStringAscii(int index, int length)
+        public string ReadASCII(int length) { return ReadASCII(Position, length); }
+        public string ReadASCII(int index, int length)
         {
             EnsureSize(index, length);
             StringBuilder sb = new StringBuilder(length);
@@ -102,8 +102,8 @@ namespace UOInterface.Network
             return sb.ToString();
         }
 
-        public string ReadStringAsciiNull() { return ReadStringAsciiNull(Position); }
-        public string ReadStringAsciiNull(int index)
+        public string ReadASCIINull() { return ReadASCIINull(Position); }
+        public string ReadASCIINull(int index)
         {
             EnsureSize(index, 1);
             StringBuilder sb = new StringBuilder();
@@ -114,8 +114,31 @@ namespace UOInterface.Network
             return sb.ToString();
         }
 
-        public string ReadStringUnicode(int length) { return ReadStringUnicode(Position, length); }
-        public string ReadStringUnicode(int index, int length)
+        public string ReadUnicode(int length) { return ReadUnicode(Position, length); }
+        public string ReadUnicode(int index, int length)
+        {
+            EnsureSize(index, length);
+            StringBuilder sb = new StringBuilder(length / 2);
+            int c;
+            while (index < Position && (c = data[index++] << 8 | data[index++]) != '\0')
+                sb.Append((char)c);
+            return sb.ToString();
+        }
+
+        public string ReadUnicodeNull() { return ReadUnicodeNull(Position); }
+        public string ReadUnicodeNull(int index)
+        {
+            EnsureSize(index, 2);
+            StringBuilder sb = new StringBuilder();
+            int c;
+            while (index < Length - 2 && (c = data[index++] << 8 | data[index++]) != '\0')
+                sb.Append((char)c);
+            Position = index;
+            return sb.ToString();
+        }
+
+        public string ReadUnicodeReversed(int length) { return ReadUnicodeReversed(Position, length); }
+        public string ReadUnicodeReversed(int index, int length)
         {
             EnsureSize(index, length);
             StringBuilder sb = new StringBuilder(length / 2);
@@ -125,8 +148,8 @@ namespace UOInterface.Network
             return sb.ToString();
         }
 
-        public string ReadStringUnicodeNull() { return ReadStringUnicodeNull(Position); }
-        public string ReadStringUnicodeNull(int index)
+        public string ReadUnicodeNullReversed() { return ReadUnicodeNullReversed(Position); }
+        public string ReadUnicodeNullReversed(int index)
         {
             EnsureSize(index, 2);
             StringBuilder sb = new StringBuilder();
@@ -175,8 +198,8 @@ namespace UOInterface.Network
             Changed = true;
         }
 
-        public void WriteStringAscii(string value) { WriteStringAscii(Position, value); }
-        public void WriteStringAscii(int index, string value)
+        public void WriteASCII(string value) { WriteASCII(Position, value); }
+        public void WriteASCII(int index, string value)
         {
             EnsureSize(index, value.Length + 1);
             foreach (char c in value)
@@ -185,8 +208,8 @@ namespace UOInterface.Network
             Changed = true;
         }
 
-        public void WriteStringAscii(string value, int length) { WriteStringAscii(Position, value, length); }
-        public void WriteStringAscii(int index, string value, int length)
+        public void WriteASCII(string value, int length) { WriteASCII(Position, value, length); }
+        public void WriteASCII(int index, string value, int length)
         {
             if (value.Length > length)
                 throw new ArgumentOutOfRangeException("value");
@@ -198,29 +221,29 @@ namespace UOInterface.Network
             Changed = true;
         }
 
-        public void WriteStringUnicode(string value) { WriteStringUnicode(Position, value); }
-        public void WriteStringUnicode(int index, string value)
+        public void WriteUnicode(string value) { WriteUnicode(Position, value); }
+        public void WriteUnicode(int index, string value)
         {
             EnsureSize(index, (value.Length + 1) * 2);
             foreach (char c in value)
             {
-                data[index++] = (byte)(c);
                 data[index++] = (byte)(c >> 8);
+                data[index++] = (byte)(c);
             }
             data[index++] = data[index] = 0;
             Changed = true;
         }
 
-        public void WriteStringUnicode(string value, int length) { WriteStringUnicode(Position, value, length); }
-        public void WriteStringUnicode(int index, string value, int length)
+        public void WriteUnicode(string value, int length) { WriteUnicode(Position, value, length); }
+        public void WriteUnicode(int index, string value, int length)
         {
             if (value.Length > length / 2)
                 throw new ArgumentOutOfRangeException("value");
             EnsureSize(index, length);
             foreach (char c in value)
             {
-                data[index++] = (byte)(c);
                 data[index++] = (byte)(c >> 8);
+                data[index++] = (byte)(c);
             }
             while (index < Position)
                 data[index++] = 0;

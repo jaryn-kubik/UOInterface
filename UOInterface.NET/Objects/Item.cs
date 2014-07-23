@@ -5,7 +5,6 @@ namespace UOInterface
 {
     public class Item : Entity
     {
-        public new static readonly Item Invalid = new Item(Serial.Invalid);
         internal Item(Serial serial) : base(serial) { }
 
         private ushort amount;
@@ -67,7 +66,6 @@ namespace UOInterface
             sb.AppendFormat("Layer: {0}", Layer);
         }
 
-        public override bool IsValid { get { return Serial.IsItem; } }
         public override bool Exists { get { return World.ContainsItem(Serial); } }
         public bool OnGround { get { return !Container.IsValid; } }
         public Serial RootContainer

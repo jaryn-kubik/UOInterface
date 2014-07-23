@@ -8,7 +8,6 @@ namespace UOInterface
 {
     public class Entity
     {
-        public static readonly Entity Invalid = new Entity(Serial.Invalid);
         protected Entity(Serial serial) { Serial = serial; }
 
         private Serial serial;
@@ -224,9 +223,7 @@ namespace UOInterface
             return sb.ToString();
         }
 
-        public virtual bool IsValid { get { return Serial.IsValid; } }
         public virtual bool Exists { get { return World.Contains(Serial); } }
-
         public int DistanceTo(Entity entity) { return position.DistanceTo(entity.position); }
         public int Distance { get { return DistanceTo(World.Player); } }
 

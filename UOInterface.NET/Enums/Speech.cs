@@ -32,4 +32,12 @@ namespace UOInterface
         Rune = 8,
         SmallLight = 9
     }
+
+    public enum AffixType : byte
+    {
+        Append = 0x00,
+        Prepend = 0x01,
+        System = 0x02,
+        None = 0xFF
+    }
 }

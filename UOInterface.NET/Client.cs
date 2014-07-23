@@ -45,20 +45,20 @@ namespace UOInterface
             SendUOMessage(UOMessage.Pathfinding, (x << 16 | y), z);
         }
 
-        public static void SendToClient(byte[] buffer)
+        public static void SendToClient(byte[] buffer, int len = 0)
         {
             lock (packetSync)
             {
-                Marshal.Copy(buffer, 0, bufferOut, buffer.Length);
+                Marshal.Copy(buffer, 0, bufferOut, len > 0 ? len : buffer.Length);
                 SendUOMessage(UOMessage.PacketToClient);
             }
         }
 
-        public static void SendToServer(byte[] buffer)
+        public static void SendToServer(byte[] buffer, int len = 0)
         {
             lock (packetSync)
             {
-                Marshal.Copy(buffer, 0, bufferOut, buffer.Length);
+                Marshal.Copy(buffer, 0, bufferOut, len > 0 ? len : buffer.Length);
                 SendUOMessage(UOMessage.PacketToServer);
             }
         }

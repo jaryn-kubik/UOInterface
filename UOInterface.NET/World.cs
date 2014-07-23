@@ -66,33 +66,33 @@ namespace UOInterface
                 return GetItem(serial);
             if (serial.IsMobile)
                 return GetMobile(serial);
-            return Entity.Invalid;
+            return null;
         }
 
         public static Item GetItem(Serial serial)
         {
             Item item;
-            return items.TryGetValue(serial, out item) || ground.TryGetValue(serial, out item) ? item : Item.Invalid;
+            return items.TryGetValue(serial, out item) || ground.TryGetValue(serial, out item) ? item : null;
         }
 
         public static Mobile GetMobile(Serial serial)
         {
             Mobile mobile;
-            return mobiles.TryGetValue(serial, out mobile) ? mobile : Mobile.Invalid;
+            return mobiles.TryGetValue(serial, out mobile) ? mobile : null;
         }
 
         private static Item GetOrCreateItem(Serial serial)
         {
-            Item item;
-            if (!items.TryGetValue(serial, out item) && !ground.TryGetValue(serial, out item))
+            Item item = GetItem(serial);
+            if (item == null)
                 itemsToAdd.Add(item = new Item(serial));
             return item;
         }
 
         private static Mobile GetOrCreateMobile(Serial serial)
         {
-            Mobile mobile;
-            if (!mobiles.TryGetValue(serial, out mobile))
+            Mobile mobile = GetMobile(serial);
+            if (mobile == null)
                 mobilesToAdd.Add(mobile = new Mobile(serial));
             return mobile;
         }
@@ -129,7 +129,7 @@ namespace UOInterface
             foreach (IGrouping<Serial, Item> group in itemsRemoved.GroupBy(i => i.Container))
             {
                 Entity container = GetEntity(group.Key);
-                if (container.IsValid)
+                if (container != null)
                 {
                     foreach (Item i in group)
                         container.RemoveItem(i);
@@ -163,7 +163,7 @@ namespace UOInterface
             foreach (IGrouping<Serial, Item> group in toUpdate.GroupBy(i => i.Container))
             {
                 Entity container = GetEntity(group.Key);
-                if (container.IsValid)
+                if (container != null)
                 {
                     foreach (Item i in group)
                     {

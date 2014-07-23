@@ -30,14 +30,19 @@ namespace UOInterface.Network
                 throw new ArgumentOutOfRangeException("length");
         }
 
+        private void WriteSize()
+        {
+            if (Dynamic)
+            {
+                data[1] = (byte)(Position);
+                data[2] = (byte)(Position >> 8);
+            }
+        }
+
         public byte[] Compile()
         {
             Array.Resize(ref data, Position);
-            if (Dynamic)
-            {
-                data[1] = (byte)(data.Length >> 8);
-                data[2] = (byte)(data.Length);
-            }
+            WriteSize();
             return data;
         }
 
@@ -75,7 +80,7 @@ namespace UOInterface.Network
             data[Position++] = (byte)(value);
         }
 
-        public void WriteStringAscii(string value)
+        public void WriteASCII(string value)
         {
             EnsureSize(value.Length + 1);
             foreach (char c in value)
@@ -83,7 +88,7 @@ namespace UOInterface.Network
             Position++;
         }
 
-        public void WriteStringAscii(string value, int length)
+        public void WriteASCII(string value, int length)
         {
             if (value.Length > length)
                 throw new ArgumentOutOfRangeException("value");
@@ -93,7 +98,7 @@ namespace UOInterface.Network
             Position += length - value.Length;
         }
 
-        public void WriteStringUnicode(string value)
+        public void WriteUnicode(string value)
         {
             EnsureSize((value.Length + 1) * 2);
             foreach (char c in value)
@@ -104,7 +109,7 @@ namespace UOInterface.Network
             Position += 2;
         }
 
-        public void WriteStringUnicode(string value, int length)
+        public void WriteUnicode(string value, int length)
         {
             if (value.Length > length)
                 throw new ArgumentOutOfRangeException("value");
@@ -115,6 +120,18 @@ namespace UOInterface.Network
                 data[Position++] = (byte)(c);
             }
             Position += (length - value.Length) * 2;
+        }
+
+        public void SendToClient()
+        {
+            WriteSize();
+            Client.SendToClient(data, Position);
+        }
+
+        public void SendToServer()
+        {
+            WriteSize();
+            Client.SendToServer(data, Position);
         }
     }
 }
