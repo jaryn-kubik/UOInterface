@@ -17,7 +17,8 @@ namespace UOInterface
         private static void OnMovementRejected(Packet p)//0x21
         {
             movementQueue.Clear();
-            ushort x = p.ReadUShort(2);
+            p.Skip(1);
+            ushort x = p.ReadUShort();
             ushort y = p.ReadUShort();
             Player.Direction = (Direction)p.ReadByte();
             Player.Position = new Position(x, y, p.ReadSByte());
@@ -27,7 +28,8 @@ namespace UOInterface
 
         private static void OnMovementAccepted(Packet p)//0x22
         {
-            Player.Notoriety = (Notoriety)p.ReadByte(2);
+            p.Skip(1);
+            Player.Notoriety = (Notoriety)p.ReadByte();
             if (movementQueue.Count > 0)
                 ProcessMove(movementQueue.Dequeue());
             toProcess.Enqueue(Player);

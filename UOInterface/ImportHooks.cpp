@@ -204,6 +204,7 @@ void SetConnectionInfo(UINT address, USHORT port)
 	connect_port = port;
 }
 
+SOCKET currentSocket;
 int WINAPI Hook_connect(SOCKET s, sockaddr_in* inaddr, int namelen)
 {
 	if (connect_address)
@@ -212,14 +213,15 @@ int WINAPI Hook_connect(SOCKET s, sockaddr_in* inaddr, int namelen)
 	if (connect_port)
 		inaddr->sin_port = ntohs(connect_port);
 
-	int result = connect(s, (sockaddr*)inaddr, namelen);
+	int result = connect(currentSocket = s, (sockaddr*)inaddr, namelen);
 	SendIPCMessage(UOMessage::Connected);
 	return result;
 }
 
 int WINAPI Hook_closesocket(SOCKET s)
 {
-	SendIPCMessage(UOMessage::Disconnecting);
+	if (s == currentSocket)
+		SendIPCMessage(UOMessage::Disconnecting);
 	return closesocket(s);
 }
 //---------------------------------------------------------------------------//

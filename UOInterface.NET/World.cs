@@ -29,16 +29,16 @@ namespace UOInterface
         public static event EventHandler<CollectionChangedEventArgs<Mobile>> MobilesChanged;
         public static event EventHandler MapChanged, Cleared;
 
-        static World()
+        [OnInit]
+        internal static void Init()
         {
             Client.Disconnecting += (s, e) => Clear();
-            Player = PlayerMobile.Invalid;
             InitHandlers();
         }
 
         private static void Clear()
         {
-            Player = PlayerMobile.Invalid;
+            Player = null;
             lock (party)
                 party.Clear();
             items.Clear();

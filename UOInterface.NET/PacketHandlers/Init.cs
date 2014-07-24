@@ -46,8 +46,6 @@ namespace UOInterface
             Handlers.ToClient.Add(0xCC, OnLocalizedMessageAffix, Priority.High);
 
             //other
-            Handlers.ToClient.Add(0x4E, OnPersonalLightLevel, Priority.High);
-            Handlers.ToClient.Add(0x4F, OnGlobalLightLevel, Priority.High);
             Handlers.ToClient.Add(0x1D, OnRemoveObject, Priority.High);
             Handlers.ToClient.Add(0xBF, OnBigFuckingPacket, Priority.High);
         }

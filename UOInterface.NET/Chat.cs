@@ -32,14 +32,10 @@ namespace UOInterface
         public static event EventHandler<UOMessageEventArgs> Message;
         public static event EventHandler<UOMessageEventArgs> LocalizedMessage;
         internal static void OnMessage(Entity entity, UOMessageEventArgs args)
-        {
-            Task.Run(() => Message.Raise(args, entity ?? system));
-        }
+        { Task.Run(() => Message.Raise(args, entity ?? system)); }
 
         internal static void OnLocalizedMessage(Entity entity, UOMessageEventArgs args)
-        {
-            Task.Run(() => LocalizedMessage.Raise(args, entity ?? system));
-        }
+        { Task.Run(() => LocalizedMessage.Raise(args, entity ?? system)); }
     }
 
     public class UOMessageEventArgs : EventArgs

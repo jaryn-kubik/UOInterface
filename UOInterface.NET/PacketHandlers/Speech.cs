@@ -12,7 +12,7 @@ namespace UOInterface
             Hue hue = p.ReadUShort();
             MessageFont font = (MessageFont)p.ReadUShort();
             string name = p.ReadASCII(30);
-            string text = p.ReadASCIINull();
+            string text = p.ReadASCII();
 
             if (entity != null)
             {
@@ -33,7 +33,7 @@ namespace UOInterface
             MessageFont font = (MessageFont)p.ReadUShort();
             string lang = p.ReadASCII(4);
             string name = p.ReadASCII(30);
-            string text = p.ReadUnicodeNull();
+            string text = p.ReadUnicode();
 
             if (entity != null)
             {
@@ -54,7 +54,7 @@ namespace UOInterface
             MessageFont font = (MessageFont)p.ReadUShort();
             uint cliloc = p.ReadUInt();
             string name = p.ReadASCII(30);
-            string text = p.ReadUnicodeNullReversed();
+            string text = p.ReadUnicodeReversed();
 
             if (entity != null)
             {
@@ -76,8 +76,8 @@ namespace UOInterface
             uint cliloc = p.ReadUInt();
             AffixType affixType = (AffixType)p.ReadByte();
             string name = p.ReadASCII(30);
-            string affix = p.ReadASCIINull();
-            string text = p.ReadUnicodeNull();
+            string affix = p.ReadASCII();
+            string text = p.ReadUnicode();
 
             if (entity != null)
             {

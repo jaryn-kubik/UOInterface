@@ -4,29 +4,22 @@ using System.Text;
 
 namespace UOInterface.Network
 {
-    public unsafe class Packet
+    public unsafe sealed class Packet : PacketBase
     {
         private readonly byte* data;
-
-        public byte Id { get { return data[0]; } }
-        public bool Dynamic { get; private set; }
-        public int Length { get; private set; }
-        public int Position { get; private set; }
-        public bool Changed { get; private set; }
-        public bool Filter { get; set; }
-
+        private readonly int len;
         internal Packet(byte* data, int len)
         {
             this.data = data;
-            Length = len;
+            this.len = len;
             Dynamic = Client.GetPacketLength(Id) < 0;
         }
 
-        public void MoveToData() { EnsureSize(Dynamic ? 3 : 1, 0); }
-        public void Skip(byte length) { EnsureSize(Position, length); }
-        public void Seek(int index) { EnsureSize(index, 0); }
+        public override int Length { get { return len; } }
+        public bool Changed { get; private set; }
+        public bool Filter { get; set; }
 
-        public byte this[int index]
+        protected override byte this[int index]
         {
             get
             {
@@ -43,212 +36,110 @@ namespace UOInterface.Network
             }
         }
 
-        public byte[] ToArray()
+        protected override void EnsureSize(int length)
+        {
+            if (length < 0 || Position + length > Length)
+                throw new ArgumentOutOfRangeException("length");
+        }
+
+        public override byte[] ToArray()
         {
             byte[] bytes = new byte[Length];
             Marshal.Copy(new IntPtr(data), bytes, 0, Length);
             return bytes;
         }
 
-        private void EnsureSize(int index, int length)
+        public void MoveToData() { Seek(Dynamic ? 3 : 1); }
+        public void Seek(int index)
         {
-            if (length < 0)
-                throw new ArgumentOutOfRangeException("length");
-            if (index < 0 || index + length > Length)
-                throw new ArgumentOutOfRangeException("index");
-            Position = index + length;
+            Position = index;
+            EnsureSize(0);
         }
 
-        #region Read
-        public bool ReadBool() { return ReadBool(Position); }
-        public bool ReadBool(int index) { return ReadByte(index) != 0; }
-
-        public sbyte ReadSByte() { return ReadSByte(Position); }
-        public sbyte ReadSByte(int index) { return (sbyte)ReadByte(index); }
-
-        public byte ReadByte() { return ReadByte(Position); }
-        public byte ReadByte(int index)
+        public bool ReadBool() { return ReadByte() != 0; }
+        public sbyte ReadSByte() { return (sbyte)ReadByte(); }
+        public byte ReadByte()
         {
-            EnsureSize(index, 1);
-            return data[index];
+            EnsureSize(1);
+            return this[Position++];
         }
 
-        public ushort ReadUShort() { return ReadUShort(Position); }
-        public ushort ReadUShort(int index)
+        public ushort ReadUShort()
         {
-            EnsureSize(index, 2);
-            return (ushort)((data[index++] << 8) |
-                            data[index]);
+            EnsureSize(2);
+            return (ushort)((this[Position++] << 8) |
+                             this[Position++]);
         }
 
-        public uint ReadUInt() { return ReadUInt(Position); }
-        public uint ReadUInt(int index)
+        public uint ReadUInt()
         {
-            EnsureSize(index, 4);
-            return (uint)((data[index++] << 24) |
-                            data[index++] << 16 |
-                            data[index++] << 8 |
-                            data[index]);
+            EnsureSize(4);
+            return (uint)((this[Position++] << 24) |
+                           this[Position++] << 16 |
+                           this[Position++] << 8 |
+                           this[Position++]);
         }
 
-        public string ReadASCII(int length) { return ReadASCII(Position, length); }
-        public string ReadASCII(int index, int length)
+        public string ReadASCII()
         {
-            EnsureSize(index, length);
-            StringBuilder sb = new StringBuilder(length);
-            byte c;
-            while (index < Position && (c = data[index++]) != '\0')
-                sb.Append((char)c);
-            return sb.ToString();
-        }
-
-        public string ReadASCIINull() { return ReadASCIINull(Position); }
-        public string ReadASCIINull(int index)
-        {
-            EnsureSize(index, 1);
+            EnsureSize(1);
             StringBuilder sb = new StringBuilder();
             byte c;
-            while (index < Length - 1 && (c = data[index++]) != '\0')
-                sb.Append((char)c);
-            Position = index;
-            return sb.ToString();
-        }
-
-        public string ReadUnicode(int length) { return ReadUnicode(Position, length); }
-        public string ReadUnicode(int index, int length)
-        {
-            EnsureSize(index, length);
-            StringBuilder sb = new StringBuilder(length / 2);
-            int c;
-            while (index < Position && (c = data[index++] << 8 | data[index++]) != '\0')
+            while (Position < Length && (c = this[Position++]) != '\0')
                 sb.Append((char)c);
             return sb.ToString();
         }
 
-        public string ReadUnicodeNull() { return ReadUnicodeNull(Position); }
-        public string ReadUnicodeNull(int index)
+        public string ReadASCII(int length)
         {
-            EnsureSize(index, 2);
+            EnsureSize(length);
+            byte[] buffer = new byte[length + 1];
+            for (int i = 0; i < length; i++)
+                buffer[i] = this[Position++];
+            fixed (byte* str = buffer)
+                return new string((sbyte*)str);
+        }
+
+        public string ReadUnicode()
+        {
+            EnsureSize(2);
             StringBuilder sb = new StringBuilder();
             int c;
-            while (index < Length - 2 && (c = data[index++] << 8 | data[index++]) != '\0')
-                sb.Append((char)c);
-            Position = index;
-            return sb.ToString();
-        }
-
-        public string ReadUnicodeReversed(int length) { return ReadUnicodeReversed(Position, length); }
-        public string ReadUnicodeReversed(int index, int length)
-        {
-            EnsureSize(index, length);
-            StringBuilder sb = new StringBuilder(length / 2);
-            int c;
-            while (index < Position && (c = data[index++] | data[index++] << 8) != '\0')
+            while (Position < Length - 1 && (c = this[Position++] << 8 | this[Position++]) != '\0')
                 sb.Append((char)c);
             return sb.ToString();
         }
 
-        public string ReadUnicodeNullReversed() { return ReadUnicodeNullReversed(Position); }
-        public string ReadUnicodeNullReversed(int index)
+        public string ReadUnicode(int length)
         {
-            EnsureSize(index, 2);
+            EnsureSize(length);
+            length /= 2;
+            char[] buffer = new char[length + 1];
+            for (int i = 0; i < length; i++)
+                buffer[i] = (char)(this[Position++] << 8 | this[Position++]);
+            fixed (char* str = buffer)
+                return new string(str);
+        }
+
+        public string ReadUnicodeReversed()
+        {
+            EnsureSize(2);
             StringBuilder sb = new StringBuilder();
             int c;
-            while (index < Length - 2 && (c = data[index++] | data[index++] << 8) != '\0')
+            while (Position < Length - 1 && (c = this[Position++] | this[Position++] << 8) != '\0')
                 sb.Append((char)c);
-            Position = index;
             return sb.ToString();
         }
-        #endregion
 
-        #region Write
-        public void WriteBool(bool value) { WriteBool(Position, value); }
-        public void WriteBool(int index, bool value)
+        public string ReadUnicodeReversed(int length)
         {
-            EnsureSize(index, 1);
-            data[index] = value ? (byte)1 : (byte)0;
-            Changed = true;
+            EnsureSize(length);
+            length /= 2;
+            char[] buffer = new char[length + 1];
+            for (int i = 0; i < length; i++)
+                buffer[i] = (char)(this[Position++] | this[Position++] << 8);
+            fixed (char* str = buffer)
+                return new string(str);
         }
-
-        public void WriteByte(byte value) { WriteByte(Position, value); }
-        public void WriteByte(int index, byte value)
-        {
-            EnsureSize(index, 1);
-            data[index] = value;
-            Changed = true;
-        }
-
-        public void WriteUShort(ushort value) { WriteUShort(Position, value); }
-        public void WriteUShort(int index, ushort value)
-        {
-            EnsureSize(index, 2);
-            data[index] = (byte)(value >> 8);
-            data[index + 1] = (byte)(value);
-            Changed = true;
-        }
-
-        public void WriteUInt(uint value) { WriteUInt(Position, value); }
-        public void WriteUInt(int index, uint value)
-        {
-            EnsureSize(index, 4);
-            data[index] = (byte)(value >> 24);
-            data[index + 1] = (byte)(value >> 16);
-            data[index + 2] = (byte)(value >> 8);
-            data[index + 3] = (byte)(value);
-            Changed = true;
-        }
-
-        public void WriteASCII(string value) { WriteASCII(Position, value); }
-        public void WriteASCII(int index, string value)
-        {
-            EnsureSize(index, value.Length + 1);
-            foreach (char c in value)
-                data[index++] = (byte)c;
-            data[index] = 0;
-            Changed = true;
-        }
-
-        public void WriteASCII(string value, int length) { WriteASCII(Position, value, length); }
-        public void WriteASCII(int index, string value, int length)
-        {
-            if (value.Length > length)
-                throw new ArgumentOutOfRangeException("value");
-            EnsureSize(index, length);
-            foreach (char c in value)
-                data[index++] = (byte)c;
-            while (index < Position)
-                data[index++] = 0;
-            Changed = true;
-        }
-
-        public void WriteUnicode(string value) { WriteUnicode(Position, value); }
-        public void WriteUnicode(int index, string value)
-        {
-            EnsureSize(index, (value.Length + 1) * 2);
-            foreach (char c in value)
-            {
-                data[index++] = (byte)(c >> 8);
-                data[index++] = (byte)(c);
-            }
-            data[index++] = data[index] = 0;
-            Changed = true;
-        }
-
-        public void WriteUnicode(string value, int length) { WriteUnicode(Position, value, length); }
-        public void WriteUnicode(int index, string value, int length)
-        {
-            if (value.Length > length / 2)
-                throw new ArgumentOutOfRangeException("value");
-            EnsureSize(index, length);
-            foreach (char c in value)
-            {
-                data[index++] = (byte)(c >> 8);
-                data[index++] = (byte)(c);
-            }
-            while (index < Position)
-                data[index++] = 0;
-            Changed = true;
-        }
-        #endregion
     }
 }

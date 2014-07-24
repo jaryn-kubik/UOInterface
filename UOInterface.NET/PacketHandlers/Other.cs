@@ -14,12 +14,6 @@ namespace UOInterface
             ProcessDelta();
         }
 
-        private static void OnPersonalLightLevel(Packet p)//0x4E
-        { p.WriteByte(5, 0x1F); }
-
-        private static void OnGlobalLightLevel(Packet p)//0x4F
-        { p.WriteByte(0x1F); }
-
         private static void OnBigFuckingPacket(Packet p)//0xBF
         {
             switch (p.ReadUShort())

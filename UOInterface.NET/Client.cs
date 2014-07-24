@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using UOInterface.Network;
 
@@ -80,6 +82,7 @@ namespace UOInterface
             switch (msg)
             {
                 case UOMessage.Init:
+                    OnInit();
                     SendUOMessage(UOMessage.ConnectionInfo, (int)ServerIP, ServerPort);
                     SendUOMessage(UOMessage.PatchEncryption);
                     break;
@@ -132,6 +135,14 @@ namespace UOInterface
             return 0;
         }
 
+        private static void OnInit()
+        {
+            foreach (MethodInfo m in typeof(Client).Assembly.GetTypes()
+               .SelectMany(t => t.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static))
+               .Where(m => m.IsDefined(typeof(OnInitAttribute))))
+                m.Invoke(null, null);
+        }
+
         internal static void OnException(Exception ex)
         {
             var handler = UnhandledException;
@@ -182,4 +193,7 @@ namespace UOInterface
         public bool Shift { get { return (Modifiers & 4) != 0; } }
         public bool Filter { get; set; }
     }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    internal sealed class OnInitAttribute : Attribute { }
 }

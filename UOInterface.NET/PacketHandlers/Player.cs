@@ -7,7 +7,6 @@ namespace UOInterface
     {
         private static void OnLoginConfirm(Packet p)//0x1B
         {
-            Clear();
             mobilesToAdd.Add(Player = new PlayerMobile(p.ReadUInt()));
             p.Skip(4);//unknown
             Player.Graphic = p.ReadUShort();

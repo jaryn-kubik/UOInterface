@@ -7,7 +7,6 @@ namespace UOInterface
     public class PlayerMobile : Mobile
     {
         private static readonly int skillCount = Enum.GetValues(typeof(SkillName)).Length;
-        public new static readonly PlayerMobile Invalid = new PlayerMobile(Serial.Invalid);
         internal PlayerMobile(Serial serial)
             : base(serial)
         {

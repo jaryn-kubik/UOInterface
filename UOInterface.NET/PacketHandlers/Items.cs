@@ -44,6 +44,7 @@ namespace UOInterface
             item.Layer = (Layer)p.ReadByte();
             item.Container = p.ReadUInt();
             item.Hue = p.ReadUShort();
+            item.Amount = 1;
             toUpdate.Add(item);
             toProcess.Enqueue(item);
             ProcessDelta();

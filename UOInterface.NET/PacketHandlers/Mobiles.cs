@@ -43,6 +43,7 @@ namespace UOInterface
                 else
                     item.Graphic = (ushort)(graphic & 0x3FFF);
 
+                item.Amount = 1;
                 item.Container = mobile;
                 mobile.AddItem(item);
                 toProcess.Enqueue(item);
