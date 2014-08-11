@@ -1,3 +1,8 @@
-void PatchEncryption();
-void PatchMulti();
-void PatchIntro();
+#pragma once
+
+namespace Patches
+{
+	void Encryption();
+	void Multi();
+	void Intro();
+}

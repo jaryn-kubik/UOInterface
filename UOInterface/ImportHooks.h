@@ -1,3 +1,7 @@
-bool HookImport(LPCSTR dll, LPCSTR function, DWORD ordinal, LPVOID hook);
-void HookImports();
-void SetConnectionInfo(UINT address, USHORT port);
+#pragma once
+
+namespace Hooks
+{
+	void Imports();
+	void SetConnectionInfo(UINT address, USHORT port);
+}

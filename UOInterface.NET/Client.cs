@@ -67,7 +67,7 @@ namespace UOInterface
         }
 
         private static readonly OnUOMessage onMessage = OnMessage;
-        private static uint OnMessage(UOMessage msg, int wParam, int lParam)
+        private static int OnMessage(UOMessage msg, int wParam, int lParam)
         {
             try { return HandleMessage(msg, wParam, lParam); }
             catch (Exception ex)
@@ -77,15 +77,14 @@ namespace UOInterface
             }
         }
 
-        private static unsafe uint HandleMessage(UOMessage msg, int wParam, int lParam)
+        private static unsafe int HandleMessage(UOMessage msg, int wParam, int lParam)
         {
             switch (msg)
             {
-                case UOMessage.Init:
+                case UOMessage.Ready:
                     OnInit();
                     SendUOMessage(UOMessage.ConnectionInfo, (int)ServerIP, ServerPort);
-                    SendUOMessage(UOMessage.PatchEncryption);
-                    break;
+                    return PatchEncryption ? 1 : 0;
 
                 case UOMessage.Connected:
                     Connected.Raise();
@@ -168,12 +167,12 @@ namespace UOInterface
         private static extern void SendUOMessage(UOMessage msg, int wParam = 0, int lParam = 0);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        private delegate uint OnUOMessage(UOMessage msg, int wParam, int lParam);
+        private delegate int OnUOMessage(UOMessage msg, int wParam, int lParam);
         private enum UOMessage
         {
-            Init = 0x0400, Connected, Disconnecting, Closing, Focus, Visibility,
+            Ready = 0x0400, Connected, Disconnecting, Closing, Focus, Visibility,
             KeyDown, PacketToClient, PacketToServer,
-            ConnectionInfo, Pathfinding, PatchEncryption
+            ConnectionInfo, Pathfinding
         }
         #endregion
     }

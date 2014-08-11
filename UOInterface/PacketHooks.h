@@ -1,5 +1,8 @@
-void HookPackets();
-void __stdcall SendPacket(byte *buffer);
-void __stdcall RecvPacket(byte *buffer);
+#pragma once
 
-USHORT GetPacketLength(byte* buffer);
+namespace Hooks
+{
+	void Packets();
+	void SendPacket(byte *buffer);
+	void RecvPacket(byte *buffer);
+}

@@ -1,74 +1,112 @@
 #include "stdafx.h"
 #include "IPC.h"
-#include "UOInterface.h"
+#include "Client.h"
 #include "PacketHooks.h"
 #include "ImportHooks.h"
+#include "MacroHooks.h"
 #include "Patches.h"
-#include "Macros.h"
 #include <mutex>
 
-HWND hwnd;
-SharedMemory *sharedMemory;
-std::mutex mtx;
-HANDLE InitIPC(HWND _hwnd)
+namespace IPC
 {
-	HANDLE mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(SharedMemory), nullptr);
-	if (!mapping)
-		throw L"CreateFileMapping";
-
-	sharedMemory = (SharedMemory*)MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-	if (!sharedMemory)
-		throw L"MapViewOfFile";
-
-	DWORD pId;
-	GetWindowThreadProcessId(hwnd = _hwnd, &pId);
-	HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE, FALSE, pId);
-
-	if (!DuplicateHandle(GetCurrentProcess(), mapping, hProcess, &mapping, 0, FALSE, DUPLICATE_SAME_ACCESS))
-		throw L"DuplicateHandle";
-	return mapping;
-}
-
-BOOL SendIPCMessage(UOMessage msg, UINT wParam, UINT lParam)
-{
-	mtx.lock();
-	LRESULT result = SendMessage(hwnd, (int)msg, wParam, lParam);
-	mtx.unlock();
-	return result == 1;
-}
-
-BOOL SendIPCData(UOMessage msg, LPVOID data, UINT len)
-{
-	mtx.lock();
-	memcpy(sharedMemory->bufferOut, data, len);
-	LRESULT result = SendMessage(hwnd, (int)msg, len, 0);
-	if (result == 2)
-		memcpy(data, sharedMemory->bufferOut, len);
-	mtx.unlock();
-	return result == 1;
-}
-
-LRESULT RecvIPCMessage(UOMessage msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
+	struct SharedMemory
 	{
-	case UOMessage::PacketToClient:
-		RecvPacket(sharedMemory->bufferIn);
-		break;
-	case UOMessage::PacketToServer:
-		SendPacket(sharedMemory->bufferIn);
-		break;
-	case UOMessage::ConnectionInfo:
-		SetConnectionInfo(wParam, LOWORD(lParam));
-		break;
-	case UOMessage::Pathfinding:
-		Pathfind(HIWORD(wParam), LOWORD(wParam), LOWORD(lParam));
-		break;
-	case UOMessage::PatchEncryption:
-		PatchEncryption();
-		break;
-	default:
-		break;
+		byte bufferIn[0x10000];
+		byte bufferOut[0x10000];
+		short packetTable[0x100];
+		HWND hwnd;
+	} *sharedMemory;
+
+	HANDLE Init(HWND hwnd, HANDLE hProcess)
+	{
+		HANDLE mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(SharedMemory), nullptr);
+		if (!mapping)
+			throw L"CreateFileMapping";
+
+		sharedMemory = (SharedMemory*)MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		if (!sharedMemory)
+			throw L"MapViewOfFile";
+		sharedMemory->hwnd = hwnd;
+
+		if (!DuplicateHandle(GetCurrentProcess(), mapping, hProcess, &mapping, 0, FALSE, DUPLICATE_SAME_ACCESS))
+			throw L"DuplicateHandle";
+		return mapping;
 	}
-	return 0;
+
+	HWND hwnd;
+	DWORD WINAPI OnAttach(LPVOID mapping)
+	{
+		try
+		{
+			sharedMemory = (SharedMemory*)MapViewOfFile((HANDLE)mapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+			if (!sharedMemory)
+				throw L"MapViewOfFile";
+			hwnd = sharedMemory->hwnd;
+			sharedMemory->hwnd = nullptr;
+
+			Client::Init();
+			Hooks::Imports();
+			Hooks::Packets();
+			Hooks::Macros();
+			Patches::Multi();
+			Patches::Intro();
+			return EXIT_SUCCESS;
+		}
+		catch (LPCWSTR str) { MessageBox(nullptr, str, L"Error: Init", MB_ICONERROR | MB_OK); }
+		return EXIT_FAILURE;
+	}
+
+	std::mutex mtx;
+	BOOL Send(UOMessage msg, UINT wParam, UINT lParam)
+	{
+		mtx.lock();
+		LRESULT result = SendMessage(hwnd, msg, wParam, lParam);
+		mtx.unlock();
+		return result == 1;
+	}
+
+	BOOL SendData(UOMessage msg, LPVOID data, UINT len)
+	{
+		mtx.lock();
+		memcpy(sharedMemory->bufferOut, data, len);
+		LRESULT result = SendMessage(hwnd, msg, len, 0);
+		if (result == 2)
+			memcpy(data, sharedMemory->bufferOut, len);
+		mtx.unlock();
+		return result == 1;
+	}
+
+	void OnWindowCreated(HWND hwnd)
+	{
+		sharedMemory->hwnd = hwnd;
+		if (Send(Ready))
+			Patches::Encryption();
+	}
+
+	void OnMessage(UINT msg, WPARAM wParam, LPARAM lParam)
+	{
+		switch (msg)
+		{
+		case PacketToClient:
+			Hooks::RecvPacket(sharedMemory->bufferIn);
+			break;
+		case PacketToServer:
+			Hooks::SendPacket(sharedMemory->bufferIn);
+			break;
+		case ConnectionInfo:
+			Hooks::SetConnectionInfo(wParam, LOWORD(lParam));
+			break;
+		case Pathfinding:
+			Hooks::Pathfind(HIWORD(wParam), LOWORD(wParam), LOWORD(lParam));
+			break;
+		default:
+			break;
+		}
+	}
+
+	UOINTERFACE_API(byte*) GetInBuffer() { return sharedMemory->bufferOut; }
+	UOINTERFACE_API(byte*) GetOutBuffer() { return sharedMemory->bufferIn; }
+	UOINTERFACE_API(short*) GetPacketTable() { return sharedMemory->packetTable; }
+	UOINTERFACE_API(void) SendUOMessage(UOMessage msg, int wParam, int lParam)
+	{ SendMessage(sharedMemory->hwnd, (UINT)msg, wParam, lParam); }
 }
