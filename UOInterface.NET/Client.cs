@@ -13,6 +13,9 @@ namespace UOInterface
         public static uint ServerIP { get; set; }
         public static ushort ServerPort { get; set; }
         public static Version Version { get; private set; }
+        public static ushort Width { get; set; }
+        public static ushort Height { get; set; }
+        public static bool Ready { get; private set; }
 
         public static event EventHandler Connected, Disconnecting, Closing;
         public static event EventHandler<bool> FocusChanged, VisibilityChanged;
@@ -20,8 +23,7 @@ namespace UOInterface
         public static event EventHandler<Packet> PacketToClient, PacketToServer;
         public static event UnhandledExceptionEventHandler UnhandledException;
 
-        private static IntPtr bufferOut;
-        private static unsafe byte* bufferIn;
+        private static unsafe byte* bufferIn, bufferOut;
         private static unsafe short* packetTable;
         private static readonly object packetSync = new object();
 
@@ -31,7 +33,7 @@ namespace UOInterface
             FileVersionInfo v = Process.GetProcessById(pid).MainModule.FileVersionInfo;
             Version = new Version(v.FileMajorPart, v.FileMinorPart, v.FileBuildPart, v.FilePrivatePart);
             bufferIn = GetInBuffer();
-            bufferOut = new IntPtr(GetOutBuffer());
+            bufferOut = GetOutBuffer();
             packetTable = GetPacketTable();
         }
 
@@ -48,20 +50,22 @@ namespace UOInterface
             SendUOMessage(UOMessage.Pathfinding, (x << 16 | y), z);
         }
 
-        public static void SendToClient(byte[] buffer, int len = 0)
+        public static unsafe void SendToClient(byte[] buffer, int len = 0)
         {
             lock (packetSync)
             {
-                Marshal.Copy(buffer, 0, bufferOut, len > 0 ? len : buffer.Length);
+                fixed (byte* b = buffer)
+                    memcpy(bufferOut, b, len > 0 ? len : buffer.Length);
                 SendUOMessage(UOMessage.PacketToClient);
             }
         }
 
-        public static void SendToServer(byte[] buffer, int len = 0)
+        public static unsafe void SendToServer(byte[] buffer, int len = 0)
         {
             lock (packetSync)
             {
-                Marshal.Copy(buffer, 0, bufferOut, len > 0 ? len : buffer.Length);
+                fixed (byte* b = buffer)
+                    memcpy(bufferOut, b, len > 0 ? len : buffer.Length);
                 SendUOMessage(UOMessage.PacketToServer);
             }
         }
@@ -82,8 +86,10 @@ namespace UOInterface
             switch (msg)
             {
                 case UOMessage.Ready:
+                    Ready = true;
                     OnInit();
                     SendUOMessage(UOMessage.ConnectionInfo, (int)ServerIP, ServerPort);
+                    SendUOMessage(UOMessage.GameSize, Width, Height);
                     return PatchEncryption ? 1 : 0;
 
                 case UOMessage.Connected:
@@ -166,13 +172,16 @@ namespace UOInterface
         [DllImport("UOInterface.dll")]
         private static extern void SendUOMessage(UOMessage msg, int wParam = 0, int lParam = 0);
 
+        [DllImport("msvcrt.dll")]
+        private static unsafe extern void memcpy(void* to, void* from, int len);
+
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate int OnUOMessage(UOMessage msg, int wParam, int lParam);
         private enum UOMessage
         {
             Ready = 0x0400, Connected, Disconnecting, Closing, Focus, Visibility,
             KeyDown, PacketToClient, PacketToServer,
-            ConnectionInfo, Pathfinding
+            ConnectionInfo, Pathfinding, GameSize
         }
         #endregion
     }

@@ -79,7 +79,7 @@
     <ClInclude Include="Client.h" />
     <ClInclude Include="ImportHooks.h" />
     <ClInclude Include="IPC.h" />
-    <ClInclude Include="MacroHooks.h" />
+    <ClInclude Include="OtherHooks.h" />
     <ClInclude Include="PacketHooks.h" />
     <ClInclude Include="Patches.h" />
     <ClInclude Include="stdafx.h" />
@@ -90,7 +90,7 @@
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="ImportHooks.cpp" />
     <ClCompile Include="IPC.cpp" />
-    <ClCompile Include="MacroHooks.cpp" />
+    <ClCompile Include="OtherHooks.cpp" />
     <ClCompile Include="PacketHooks.cpp" />
     <ClCompile Include="Patches.cpp" />
     <ClCompile Include="stdafx.cpp">

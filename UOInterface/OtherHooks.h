@@ -3,5 +3,6 @@
 namespace Hooks
 {
 	void Pathfind(USHORT x, USHORT y, USHORT z);
-	void Macros();
+	void SetGameSize(int width, int height);
+	void Other();
 }

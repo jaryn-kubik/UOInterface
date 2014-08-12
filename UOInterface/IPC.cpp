@@ -3,7 +3,7 @@
 #include "Client.h"
 #include "PacketHooks.h"
 #include "ImportHooks.h"
-#include "MacroHooks.h"
+#include "OtherHooks.h"
 #include "Patches.h"
 #include <mutex>
 
@@ -47,7 +47,7 @@ namespace IPC
 			Client::Init();
 			Hooks::Imports();
 			Hooks::Packets();
-			Hooks::Macros();
+			Hooks::Other();
 			Patches::Multi();
 			Patches::Intro();
 			return EXIT_SUCCESS;
@@ -98,6 +98,9 @@ namespace IPC
 			break;
 		case Pathfinding:
 			Hooks::Pathfind(HIWORD(wParam), LOWORD(wParam), LOWORD(lParam));
+			break;
+		case GameSize:
+			Hooks::SetGameSize(wParam, lParam);
 			break;
 		default:
 			break;

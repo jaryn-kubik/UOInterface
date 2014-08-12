@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "MacroHooks.h"
+#include "OtherHooks.h"
 #include "Client.h"
 
 namespace Hooks
@@ -65,10 +65,63 @@ namespace Hooks
 		pathfindingData[0x14] = z;
 		Pathfind();
 	}
+	//---------------------------------------------------------------------------//
+	//---------------------------------------------------------------------------//
+	//---------------------------------------------------------------------------//
+	LPVOID gameSizeFunc;
+	int sizeW = 800, sizeH = 600;
 
-	void Macros()
+	__inline void __declspec(naked) __stdcall GameSizeHook()
+	{
+		_asm
+		{
+			mov		eax, [esp + 4];
+			mov		edx, 280h;
+			cmp		eax, edx;
+			mov		ecx, 1E0h;
+			je		end;
+
+			mov		edx, sizeW;
+			mov		ecx, sizeH;
+			cmp		eax, eax;
+
+		end:
+			jmp		gameSizeFunc;
+		}
+	}
+
+	bool HookGameSize()
+	{
+		byte sig[] =
+		{
+			0x8B, 0x44, 0x24, 0x04,					//mov		eax, [esp+arg_0]
+			0xBA, 0x80, 0x02, 0x00, 0x00,			//mov		edx, 280h
+			0x3B, 0xC2,								//cmp		eax, edx
+			0xB9, 0xE0, 0x01, 0x00, 0x00			//mov		ecx, 1E0h
+		};
+
+		byte *offset;
+		if (Client::FindCode(sig, &offset))
+		{
+			gameSizeFunc = Client::Hook(offset, &GameSizeHook, sizeof(sig));
+			return true;
+		}
+		return false;
+	}
+
+	void SetGameSize(int width, int height)
+	{
+		if (width > 0)
+			sizeW = width;
+		if (height > 0)
+			sizeH = height;
+	}
+
+	void Other()
 	{
 		if (!HookPathfinding())
-			throw L"Macros: Pathfinding";
+			throw L"Hooks: Pathfinding";
+		if (!HookGameSize())
+			throw L"Hooks: GameSize";
 	}
 }

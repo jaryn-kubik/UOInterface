@@ -14,8 +14,8 @@ namespace IPC
 		First = WM_USER,
 		Ready = First, Connected, Disconnecting, Closing, Focus, Visibility,
 		KeyDown, PacketToClient, PacketToServer,
-		ConnectionInfo, Pathfinding,
-		Last = Pathfinding
+		ConnectionInfo, Pathfinding, GameSize,
+		Last = GameSize
 	};
 
 	HANDLE Init(HWND hwnd, HANDLE hProcess);
@@ -24,7 +24,6 @@ namespace IPC
 	BOOL SendData(UOMessage msg, LPVOID data, UINT len);
 	void OnMessage(UINT msg, WPARAM wParam, LPARAM lParam);
 	void OnWindowCreated(HWND hwnd);
-
 
 	UOINTERFACE_API(byte*) GetInBuffer();
 	UOINTERFACE_API(byte*) GetOutBuffer();
