@@ -87,7 +87,7 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\UOInterface.NET\UOInterface.NET.csproj">
+    <ProjectReference Include="..\UOInterface\UOInterface.csproj">
       <Project>{0edcee62-37bc-4605-9f74-5c6de7e0cd54}</Project>
       <Name>UOInterface.NET</Name>
     </ProjectReference>

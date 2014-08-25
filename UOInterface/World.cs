@@ -176,19 +176,15 @@ namespace UOInterface
 
             Task.Run(() =>
             {
-                try
-                {
-                    Entity entity;
-                    while (toProcess.TryDequeue(out entity))
-                        entity.ProcessDelta();
+                Entity entity;
+                while (toProcess.TryDequeue(out entity))
+                    entity.ProcessDelta();
 
-                    if (itemsChanged != null)
-                        ItemsChanged.Raise(itemsChanged);
-                    if (mobilesChanged != null)
-                        MobilesChanged.Raise(mobilesChanged);
-                }
-                catch (Exception ex) { Client.OnException(ex); }
-            });
+                if (itemsChanged != null)
+                    ItemsChanged.Raise(itemsChanged);
+                if (mobilesChanged != null)
+                    MobilesChanged.Raise(mobilesChanged);
+            }).ContinueWith(t => Client.OnException(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 }

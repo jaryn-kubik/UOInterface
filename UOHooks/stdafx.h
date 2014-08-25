@@ -15,4 +15,3 @@
 
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Shlwapi.lib")
-#pragma comment (lib, "MSCorEE.lib")
