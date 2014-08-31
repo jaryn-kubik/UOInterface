@@ -7,16 +7,16 @@ namespace Client
 	LPVOID Hook(LPVOID source, LPVOID target, UINT len);
 	bool Hook(LPCSTR dll, LPCSTR function, LPVOID hook, DWORD ordinal = 0);
 
-	bool Find(byte *signature, size_t len, byte **offset, byte *start, byte *end);
-	bool FindCode(byte *signature, size_t len, byte **offset);
-	bool FindData(byte *signature, size_t len, byte **offset);
+	bool Find(BYTE *signature, size_t len, BYTE **offset, BYTE *start, BYTE *end);
+	bool FindCode(BYTE *signature, size_t len, BYTE **offset);
+	bool FindData(BYTE *signature, size_t len, BYTE **offset);
 
 	template<size_t len>
-	bool FindCode(byte(&signature)[len], byte **offset)
+	bool FindCode(BYTE(&signature)[len], BYTE **offset)
 	{ return FindCode(signature, len, offset); }
 
 	template<size_t len>
-	bool FindData(byte(&signature)[len], byte **offset)
+	bool FindData(BYTE(&signature)[len], BYTE **offset)
 	{ return FindData(signature, len, offset); }
 
 	template<typename Type>

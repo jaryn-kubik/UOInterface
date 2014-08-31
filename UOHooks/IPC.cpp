@@ -17,8 +17,8 @@ namespace IPC
 {
 	struct SharedMemory
 	{
-		byte dataOut[0x10000];
-		byte dataIn[0x10000];
+		BYTE dataOut[0x10000];
+		BYTE dataIn[0x10000];
 		UINT msgOut[4];
 		UINT msgIn[4];
 	} *shared;
@@ -31,12 +31,12 @@ namespace IPC
 		{
 			switch (shared->msgIn[0])
 			{
-				/*case PacketToClient:
-					Hooks::RecvPacket(shared->dataIn);
-					break;
-					case PacketToServer:
-					Hooks::SendPacket(shared->dataIn);
-					break;*/
+			case PacketToClient:
+				Hooks::RecvPacket(shared->dataIn);
+				break;
+			case PacketToServer:
+				Hooks::SendPacket(shared->dataIn);
+				break;
 			case ConnectionInfo:
 				Hooks::SetConnectionInfo(shared->msgIn[1], shared->msgIn[2]);
 				if (shared->msgIn[3])
@@ -101,12 +101,6 @@ namespace IPC
 			shared->msgOut[3] = (UINT)Duplicate(hProcess, handledIn);
 			CloseHandle(hProcess);
 
-			//start ipc server
-			/*std::thread t(MessagePump);
-			t.detach();*/
-
-			std::thread(MessagePump).detach();
-
 			//init UOHooks
 			Client::Init();
 			Hooks::Imports();
@@ -115,6 +109,8 @@ namespace IPC
 			Patches::Multi();
 			Patches::Intro();
 			memcpy(shared->dataOut, Hooks::GetPacketTable(), 0x100 * sizeof(UINT));
+
+			std::thread(MessagePump).detach();//start ipc server
 			return (DWORD)mmfRemote;
 		}
 		catch (LPCWSTR str) { MessageBox(nullptr, str, L"OnAttach", MB_ICONERROR | MB_OK); }
@@ -140,11 +136,5 @@ namespace IPC
 		if (shared->msgOut[0] == 2)
 			memcpy(data, shared->dataOut, len);
 		return shared->msgOut[0] == 1;
-	}
-
-	void OnWindowCreated(HWND hwnd)
-	{
-		if (Send(Ready, (UINT)hwnd))
-			Patches::Encryption();
 	}
 }

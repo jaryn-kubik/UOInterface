@@ -3,7 +3,7 @@
 namespace Hooks
 {
 	void Packets();
-	void SendPacket(byte *buffer);
-	void RecvPacket(byte *buffer);
+	void SendPacket(BYTE *buffer);
+	void RecvPacket(BYTE *buffer);
 	UINT* GetPacketTable();
 }

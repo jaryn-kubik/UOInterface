@@ -8,14 +8,14 @@ namespace Hooks
 	LPVOID pathfindingFunc;
 	bool HookPathfinding()
 	{
-		byte sig1[] =
+		BYTE sig1[] =
 		{
 			0x0F, 0xBF, 0x68, 0x24,					//movsx		ebp, word ptr [eax+24h]
 			0x0F, 0xBF, 0x50, 0x26,					//movsx		edx, word ptr [eax+26h]
 			0x0F, 0xBF, 0x40, 0x28					//movsx		eax, word ptr [eax+28h]
 		};
 
-		byte sig2[] =
+		BYTE sig2[] =
 		{
 			0x0F, 0xBF, 0x50, 0x26,					//movsx		edx, word ptr [eax+26h]
 			0x53,									//push		ebx
@@ -24,9 +24,9 @@ namespace Hooks
 		};
 
 		bool result;
-		if (result = Client::FindCode(sig1, (byte**)&pathfindingFunc))
+		if (result = Client::FindCode(sig1, (BYTE**)&pathfindingFunc))
 			pathfindingType = 1;
-		else if (result = Client::FindCode(sig2, (byte**)&pathfindingFunc))
+		else if (result = Client::FindCode(sig2, (BYTE**)&pathfindingFunc))
 			pathfindingType = 2;
 		return result;
 	}
@@ -92,7 +92,7 @@ namespace Hooks
 
 	bool HookGameSize()
 	{
-		byte sig[] =
+		BYTE sig[] =
 		{
 			0x8B, 0x44, 0x24, 0x04,					//mov		eax, [esp+arg_0]
 			0xBA, 0x80, 0x02, 0x00, 0x00,			//mov		edx, 280h
@@ -100,7 +100,7 @@ namespace Hooks
 			0xB9, 0xE0, 0x01, 0x00, 0x00			//mov		ecx, 1E0h
 		};
 
-		byte *offset;
+		BYTE *offset;
 		if (Client::FindCode(sig, &offset))
 		{
 			gameSizeFunc = Client::Hook(offset, &GameSizeHook, sizeof(sig));

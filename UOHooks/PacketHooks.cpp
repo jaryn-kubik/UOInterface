@@ -2,6 +2,7 @@
 #include "PacketHooks.h"
 #include "Client.h"
 #include "IPC.h"
+#include <atomic>
 
 namespace Hooks
 {
@@ -16,7 +17,7 @@ namespace Hooks
 			0x03, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0x00, 0x80, 0x00, 0x00  //packet 3, unknown, len 0x8000 (dynamic)
 		};
 
-		byte *offset;
+		BYTE *offset;
 		if (!Client::FindData(sig, &offset))
 			return false;
 
@@ -28,7 +29,7 @@ namespace Hooks
 	}
 
 	UINT* GetPacketTable()	{ return packetTable; }
-	UINT GetPacketLength(byte* buffer)
+	UINT GetPacketLength(BYTE* buffer)
 	{
 		UINT len = packetTable[buffer[0]];
 		if (len == 0x8000)
@@ -42,8 +43,8 @@ namespace Hooks
 	UINT sendType;
 	LPVOID sendFunc, recvFunc;
 
-	BOOL __stdcall OnSend(byte *buffer)	{ return IPC::SendData(IPC::PacketToServer, buffer, GetPacketLength(buffer)); }
-	BOOL __stdcall OnRecv(byte *buffer)	{ return IPC::SendData(IPC::PacketToClient, buffer, GetPacketLength(buffer)); }
+	BOOL __stdcall OnSend(BYTE *buffer)	{ return IPC::SendData(IPC::PacketToServer, buffer, GetPacketLength(buffer)); }
+	BOOL __stdcall OnRecv(BYTE *buffer)	{ return IPC::SendData(IPC::PacketToClient, buffer, GetPacketLength(buffer)); }
 
 	//calls the original send function (restores overriden code)
 	__inline void __declspec(naked) __stdcall SendFunc()
@@ -96,19 +97,21 @@ namespace Hooks
 		}
 	}
 
-	void SendPacket(byte *buffer)
+	void SendPacket(BYTE *buffer)
 	{
 		_asm
 		{
+			push	ecx;
 			mov		ecx, networkObject;
 			push	buffer;
 			call	SendFunc;
+			pop		ecx;
 		}
 	}
 
 	bool HookSend()
 	{
-		byte sig1[] =
+		BYTE sig1[] =
 		{
 			0x8D, 0x8B, 0x94, 0x00, 0x00, 0x00,		//lea		ecx, [ebx+94h]
 			0xE8, 0xCC, 0xCC, 0xCC, 0xCC,			//call		sub_XXYYXXYY
@@ -116,11 +119,11 @@ namespace Hooks
 			0x8D, 0x8B, 0xBC, 0x00, 0x00, 0x00		//lea		ecx, [ebx+0BCh]
 		};
 
-		byte sig2[] = {
+		BYTE sig2[] = {
 			0x0F, 0xB7, 0xD8, 0x0F, 0xB6, 0x06, 0x83, 0xC4,
 			0x04, 0x53, 0x50, 0x8D, 0x4F, 0x6C };
 
-		byte *offset;
+		BYTE *offset;
 		if (Client::FindCode(sig1, &offset))
 		{
 			sendFunc = Client::Hook(offset - 0x22, &SendHook, 7);
@@ -166,19 +169,21 @@ namespace Hooks
 		}
 	}
 
-	void RecvPacket(byte* buffer)
+	void RecvPacket(BYTE* buffer)
 	{
 		_asm
 		{
+			push	ecx;
 			mov		ecx, networkObject;
 			push	buffer;
 			call	recvFunc;
+			pop		ecx;
 		}
 	}
 
 	bool HookRecv()
 	{
-		byte sig1[] =
+		BYTE sig1[] =
 		{
 			0xE8, 0xCC, 0xCC, 0xCC, 0xCC,			//call		sub_XXYYXXYY
 			0xF7, 0xD8,								//neg		eax
@@ -187,7 +192,7 @@ namespace Hooks
 			0xC3									//retn
 		};
 
-		byte sig2[] =
+		BYTE sig2[] =
 		{
 			0x56,									//push		esi
 			0x8B, 0xF1,								//mov		esi, ecx
@@ -198,11 +203,11 @@ namespace Hooks
 			0xC3									//retn
 		};
 
-		byte *offset;
+		BYTE *offset;
 		if (Client::FindCode(sig1, &offset))
 		{
 			UINT address = (UINT)offset;
-			if (Client::FindData((byte*)&address, 4, &offset))
+			if (Client::FindData((BYTE*)&address, 4, &offset))
 			{
 				UINT *pRecv = (UINT*)(offset + 8);
 				recvFunc = (LPVOID)*pRecv;

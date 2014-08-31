@@ -3,7 +3,7 @@
 
 namespace Client
 {
-	byte *codeBase, *codeEnd, *dataBase, *dataEnd;
+	BYTE *codeBase, *codeEnd, *dataBase, *dataEnd;
 	DWORD base;
 	PIMAGE_OPTIONAL_HEADER optionalHeader;
 	PIMAGE_IMPORT_DESCRIPTOR imports;
@@ -16,15 +16,15 @@ namespace Client
 		optionalHeader = &inh->OptionalHeader;
 		imports = (PIMAGE_IMPORT_DESCRIPTOR)(base + optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
-		codeBase = (byte*)(base + optionalHeader->BaseOfCode);
+		codeBase = (BYTE*)(base + optionalHeader->BaseOfCode);
 		codeEnd = codeBase + optionalHeader->SizeOfCode;
-		dataBase = (byte*)(base + optionalHeader->BaseOfData);
+		dataBase = (BYTE*)(base + optionalHeader->BaseOfData);
 		dataEnd = dataBase + optionalHeader->SizeOfInitializedData;
 	}
 
-	bool FindCode(byte *signature, size_t len, byte **offset) { return Find(signature, len, offset, codeBase, codeEnd); }
-	bool FindData(byte *signature, size_t len, byte **offset) { return Find(signature, len, offset, dataBase, dataEnd); }
-	bool Find(byte *signature, size_t len, byte **offset, byte *start, byte *end)
+	bool FindCode(BYTE *signature, size_t len, BYTE **offset) { return Find(signature, len, offset, codeBase, codeEnd); }
+	bool FindData(BYTE *signature, size_t len, BYTE **offset) { return Find(signature, len, offset, dataBase, dataEnd); }
+	bool Find(BYTE *signature, size_t len, BYTE **offset, BYTE *start, BYTE *end)
 	{
 		for (*offset = start; *offset < end; (*offset)++)
 		{
@@ -46,7 +46,7 @@ namespace Client
 
 		memset(source, 0x90, len);
 		UINT offset = (UINT)target - (UINT)source - 5;
-		byte *data = (byte*)source;
+		BYTE *data = (BYTE*)source;
 		data[0] = 0xE9;
 		*(UINT*)&data[1] = offset;
 

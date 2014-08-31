@@ -41,7 +41,7 @@ namespace UOInterface
         public static void SendToServer(byte[] buffer, int len = 0)
         { hooks.SendData(UOMessage.PacketToServer, buffer, len > 0 ? len : buffer.Length); }
 
-        private static unsafe uint OnMessage(UOMessage msg, uint arg1, uint arg2, uint arg3, byte* data)
+        private static unsafe int OnMessage(UOMessage msg, int arg1, int arg2, int arg3, byte* data)
         {
             try
             {
@@ -49,55 +49,55 @@ namespace UOInterface
                 {
                     case UOMessage.Ready:
                         Ready = true;
-                        hooks.Send(UOMessage.ConnectionInfo, ServerIP, ServerPort, PatchEncryption ? 1U : 0U);
+                        hooks.Send(UOMessage.ConnectionInfo, (int)ServerIP, ServerPort, PatchEncryption ? 1 : 0);
                         hooks.Send(UOMessage.GameSize, Width, Height);
                         OnInit();
                         break;
 
-                    /*case UOHooks.UOMessage.Connected:
-                    Connected.Raise();
-                    break;
+                    case UOMessage.Connected:
+                        Connected.Raise();
+                        break;
 
-                case UOHooks.UOMessage.Disconnecting:
-                    Disconnecting.Raise();
-                    break;
+                    case UOMessage.Disconnecting:
+                        Disconnecting.Raise();
+                        break;
 
-                case UOHooks.UOMessage.Closing:
-                    Closing.Raise();
-                    break;
+                    case UOMessage.Closing:
+                        Closing.Raise();
+                        break;
 
-                case UOHooks.UOMessage.Focus:
-                    FocusChanged.Raise(wParam != 0);
-                    break;
+                    case UOMessage.Focus:
+                        FocusChanged.Raise(arg1 != 0);
+                        break;
 
-                case UOHooks.UOMessage.Visibility:
-                    VisibilityChanged.Raise(wParam != 0);
-                    break;
+                    case UOMessage.Visibility:
+                        VisibilityChanged.Raise(arg1 != 0);
+                        break;
 
-                case UOHooks.UOMessage.KeyDown:
-                    UOKeyEventArgs keyArgs = new UOKeyEventArgs(wParam, lParam);
-                    KeyDown.Raise(keyArgs);
-                    if (keyArgs.Filter)
-                        return 1;
-                    break;
+                    case UOMessage.KeyDown:
+                        UOKeyEventArgs keyArgs = new UOKeyEventArgs(arg1, arg2);
+                        KeyDown.Raise(keyArgs);
+                        if (keyArgs.Filter)
+                            return 1;
+                        break;
 
-                case UOHooks.UOMessage.PacketToClient:
-                    Packet toClient = new Packet(bufferIn, wParam);
-                    PacketToClient.Raise(toClient);
-                    if (toClient.Filter)
-                        return 1;
-                    if (toClient.Changed)
-                        return 2;
-                    break;
+                    case UOMessage.PacketToClient:
+                        Packet toClient = new Packet(data, arg1);
+                        PacketToClient.Raise(toClient);
+                        if (toClient.Filter)
+                            return 1;
+                        if (toClient.Changed)
+                            return 2;
+                        break;
 
-                case UOHooks.UOMessage.PacketToServer:
-                    Packet toServer = new Packet(bufferIn, wParam);
-                    PacketToServer.Raise(toServer);
-                    if (toServer.Filter)
-                        return 1;
-                    if (toServer.Changed)
-                        return 2;
-                    break;*/
+                    case UOMessage.PacketToServer:
+                        Packet toServer = new Packet(data, arg1);
+                        PacketToServer.Raise(toServer);
+                        if (toServer.Filter)
+                            return 1;
+                        if (toServer.Changed)
+                            return 2;
+                        break;
                 }
             }
             catch (Exception ex) { OnException(ex); }

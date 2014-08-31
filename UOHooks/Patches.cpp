@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Patches.h"
 #include "Client.h"
+#include <stdio.h>
 
 namespace Patches
 {
@@ -12,11 +13,11 @@ namespace Patches
 		unsigned char sig2[] = { 0x75, 0x12, 0x8B, 0x54, 0x24, 0x0C };
 
 		bool result;
-		byte *offset;
+		BYTE *offset;
 		if (result = Client::FindCode(sig1, &offset))
-			Client::Set<byte>(offset + 0x15, 0x84);
+			Client::Set<BYTE>(offset + 0x15, 0x84);
 		else if (result = Client::FindCode(sig2, &offset))
-			Client::Set<byte>(offset, 0xEB);
+			Client::Set<BYTE>(offset, 0xEB);
 		return result;
 	}
 
@@ -32,18 +33,18 @@ namespace Patches
 		unsigned char sig4[] = { 0x5E, 0xC3, 0x8B, 0x86, 0xCC, 0xCC, 0xCC, 0xCC, 0x85, 0xC0, 0x74 };
 
 		bool result;
-		byte *offset;
+		BYTE *offset;
 		if (result = Client::FindCode(sig1, &offset))
-			Client::Set<byte>(offset + 8, 0x85);
+			Client::Set<BYTE>(offset + 8, 0x85);
 		else if (result = Client::FindCode(sig2, &offset))
-			Client::Set<byte>(offset, 0xEB);
+			Client::Set<BYTE>(offset, 0xEB);
 		else if (result = Client::FindCode(sig3, &offset))
-			Client::Set<byte>(offset + 0xC, 0x85);
+			Client::Set<BYTE>(offset + 0xC, 0x85);
 
 		if (Client::FindCode(sig4, &offset))
 		{
-			Client::Set<byte>(offset + 8, 0x3B);
-			Client::Set<byte>(offset + 0x12, 0x3B);
+			Client::Set<BYTE>(offset + 8, 0x3B);
+			Client::Set<BYTE>(offset + 0x12, 0x3B);
 			result = true;
 		}
 		return result;
@@ -52,24 +53,24 @@ namespace Patches
 	bool ProtocolDecryption()
 	{
 		//3.x - 5.x
-		byte sig1[] = { 0x83, 0xFF, 0xFF, 0x0F, 0x84, 0xCC, 0xCC, 0xCC, 0xCC, 0x8B, 0x86, 0xCC, 0xCC, 0xCC, 0xCC, 0x85, 0xC0 };
+		BYTE sig1[] = { 0x83, 0xFF, 0xFF, 0x0F, 0x84, 0xCC, 0xCC, 0xCC, 0xCC, 0x8B, 0x86, 0xCC, 0xCC, 0xCC, 0xCC, 0x85, 0xC0 };
 		//6.x - 7.x
-		byte sig2[] = { 0x74, 0x37, 0x83, 0xBE, 0xB4, 0x00, 0x00, 0x00, 0x00 };
+		BYTE sig2[] = { 0x74, 0x37, 0x83, 0xBE, 0xB4, 0x00, 0x00, 0x00, 0x00 };
 		//3.x
-		byte sig3[] = { 0x33, 0xFF, 0x3B, 0xFD, 0x0F, 0x85 };
+		BYTE sig3[] = { 0x33, 0xFF, 0x3B, 0xFD, 0x0F, 0x85 };
 		//1.x - 4.x
-		byte sig4[] = { 0x8B, 0xF8, 0x83, 0xFF, 0xFF, 0x74, 0xCC, 0x8B, 0x86 };
+		BYTE sig4[] = { 0x8B, 0xF8, 0x83, 0xFF, 0xFF, 0x74, 0xCC, 0x8B, 0x86 };
 
 		bool result;
-		byte *offset;
+		BYTE *offset;
 		if (result = Client::FindCode(sig1, &offset))
-			Client::Set<byte>(offset + 0xF, 0x3B);
+			Client::Set<BYTE>(offset + 0xF, 0x3B);
 		else if (result = Client::FindCode(sig2, &offset))
-			Client::Set<byte>(offset, 0xEB);
+			Client::Set<BYTE>(offset, 0xEB);
 		else if (result = Client::FindCode(sig3, &offset))
-			Client::Set<byte>(offset + 0x1A, 0x3B);
+			Client::Set<BYTE>(offset + 0x1A, 0x3B);
 		else if (result = Client::FindCode(sig4, &offset))
-			Client::Set<byte>(offset + 0xD, 0x3B);
+			Client::Set<BYTE>(offset + 0xD, 0x3B);
 		return result;
 	}
 
@@ -137,31 +138,31 @@ namespace Patches
 	//---------------------------------------------------------------------------//
 	void Intro()
 	{
-		byte intro[10] = "intro.bik";
-		byte osilogo[12] = "osilogo.bik";
-		byte splash[12] = "Splash gump";
+		BYTE intro[10] = "intro.bik";
+		BYTE osilogo[12] = "osilogo.bik";
+		BYTE splash[12] = "Splash gump";
 
-		byte *offset;
+		BYTE *offset;
 		if (Client::FindData(intro, &offset))
-			Client::Set<byte>(offset, '_');
+			Client::Set<BYTE>(offset, '_');
 
 		if (Client::FindData(osilogo, &offset))
-			Client::Set<byte>(offset, '_');
+			Client::Set<BYTE>(offset, '_');
 
 		if (Client::FindData(splash, &offset))
 		{
 			//mov		dword ptr [esi+8], offset aSplashGump ; "Splash gump"
-			byte sig[] = { 0xC7, 0x46, 0x08, 0x00, 0x00, 0x00, 0x00 };
+			BYTE sig[] = { 0xC7, 0x46, 0x08, 0x00, 0x00, 0x00, 0x00 };
 			*(UINT*)(sig + 3) = (UINT)offset;
 
 			if (Client::FindCode(sig, &offset))
 			{
 				//xor eax, eax
-				Client::Set<byte>(offset + 0x30, 0x33);
-				Client::Set<byte>(offset + 0x30 + 1, 0xC0);
+				Client::Set<BYTE>(offset + 0x30, 0x33);
+				Client::Set<BYTE>(offset + 0x30 + 1, 0xC0);
 				//xor eax, eax
-				Client::Set<byte>(offset + 0x30 + 2, 0x33);
-				Client::Set<byte>(offset + 0x30 + 3, 0xC0);
+				Client::Set<BYTE>(offset + 0x30 + 2, 0x33);
+				Client::Set<BYTE>(offset + 0x30 + 3, 0xC0);
 			}
 		}
 	}

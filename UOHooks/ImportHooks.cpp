@@ -3,6 +3,7 @@
 #include "Client.h"
 #include "IPC.h"
 #include "WinSock2.h"
+#include <Shlwapi.h>
 
 namespace Hooks
 {

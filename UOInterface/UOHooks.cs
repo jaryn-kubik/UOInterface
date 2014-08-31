@@ -17,7 +17,7 @@ namespace UOInterface
         public IReadOnlyList<uint> PacketTable { get; private set; }
 
         private readonly unsafe byte* dataIn, dataOut;
-        private readonly unsafe uint* msgIn, msgOut;
+        private readonly unsafe int* msgIn, msgOut;
         private readonly IntPtr sentIn, handledIn, sentOut, handledOut;
         private readonly object syncRoot = new object();
 
@@ -30,7 +30,7 @@ namespace UOInterface
             dataIn = (byte*)sharedMemory.ToPointer();
             dataOut = dataIn + 0x10000;
 
-            msgIn = (uint*)(dataOut + 0x10000);
+            msgIn = (int*)(dataOut + 0x10000);
             msgOut = msgIn + 4;
 
             uint[] packetTable = new uint[0x100];
@@ -46,11 +46,11 @@ namespace UOInterface
             new Thread(MessagePump) { IsBackground = true }.Start(handler);
         }
 
-        public unsafe uint Send(UOMessage msg, uint arg1 = 0, uint arg2 = 0, uint arg3 = 0)
+        public unsafe int Send(UOMessage msg, int arg1 = 0, int arg2 = 0, int arg3 = 0)
         {
             lock (syncRoot)
             {
-                msgOut[0] = (uint)msg;
+                msgOut[0] = (int)msg;
                 msgOut[1] = arg1;
                 msgOut[2] = arg2;
                 msgOut[3] = arg3;
@@ -59,20 +59,20 @@ namespace UOInterface
             }
         }
 
-        public unsafe uint SendData(UOMessage msg, byte[] buffer, int len)
+        public unsafe int SendData(UOMessage msg, byte[] buffer, int len)
         {
             lock (syncRoot)
             {
-                msgOut[0] = (uint)msg;
+                msgOut[0] = (int)msg;
                 fixed (byte* b = buffer)
                     memcpy(dataOut, b, len);
-                msgOut[1] = (uint)len;
+                msgOut[1] = len;
                 SignalObjectAndWait(sentOut, handledOut);
                 return msgOut[0];
             }
         }
 
-        public unsafe delegate uint OnUOMessage(UOMessage msg, uint arg1, uint arg2, uint arg3, byte* data);
+        public unsafe delegate int OnUOMessage(UOMessage msg, int arg1, int arg2, int arg3, byte* data);
         private unsafe void MessagePump(object handler)
         {
             OnUOMessage h = (OnUOMessage)handler;
@@ -314,7 +314,7 @@ namespace UOInterface
         #endregion
     }
 
-    public enum UOMessage : uint
+    public enum UOMessage
     {
         Ready, Connected, Disconnecting, Closing, Focus, Visibility,
         KeyDown, PacketToClient, PacketToServer,
