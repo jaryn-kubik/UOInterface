@@ -6,10 +6,9 @@
 namespace Hooks
 {
 	struct PacketInfo{ UINT id, unknown, len; };
-	short *packetTable;
+	UINT packetTable[0x100];
 	bool FindPacketTable()
 	{
-		packetTable = IPC::GetPacketTable();
 		unsigned char sig[] =
 		{
 			0x01, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0x05, 0x00, 0x00, 0x00, //packet 1, unknown, len 5
@@ -28,9 +27,10 @@ namespace Hooks
 		return true;
 	}
 
-	USHORT GetPacketLength(byte* buffer)
+	UINT* GetPacketTable()	{ return packetTable; }
+	UINT GetPacketLength(byte* buffer)
 	{
-		USHORT len = packetTable[buffer[0]];
+		UINT len = packetTable[buffer[0]];
 		if (len == 0x8000)
 			len = *((USHORT *)(buffer + 1));
 		return len;

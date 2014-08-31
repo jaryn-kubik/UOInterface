@@ -75,14 +75,8 @@ namespace Hooks
 			break;
 
 		case WM_CREATE:
-			IPC::OnWindowCreated(hwnd);
+			IPC::Send(IPC::Ready, (UINT)hwnd);
 			break;
-		}
-
-		if (msg >= IPC::First && msg <= IPC::Last)
-		{
-			IPC::OnMessage(msg, wParam, lParam);
-			return 0;
 		}
 		return oldWndProc(hwnd, msg, wParam, lParam);
 	}

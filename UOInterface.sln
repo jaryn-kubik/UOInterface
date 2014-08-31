@@ -1,14 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UOHooks", "UOHooks\UOHooks.vcxproj", "{EBBB376D-3A69-4FEC-BC0B-60679AE0B8B5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PacketLogger", "PacketLogger\PacketLogger.csproj", "{2B1B5A37-8346-4F7B-A3AE-AEE64BCCABBE}"
-	ProjectSection(ProjectDependencies) = postProject
-		{EBBB376D-3A69-4FEC-BC0B-60679AE0B8B5} = {EBBB376D-3A69-4FEC-BC0B-60679AE0B8B5}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UOInterface", "UOInterface\UOInterface.csproj", "{0EDCEE62-37BC-4605-9F74-5C6DE7E0CD54}"
 	ProjectSection(ProjectDependencies) = postProject
