@@ -23,7 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "beaengine/BeaEngine.h"
+#define BEA_ENGINE_STATIC
+#include "BeaEngine.h"
 #include "Includes/protos.h"
 #include "Includes/internal_datas.h"
 #include "Includes/instr_set/Data_opcode.h"
@@ -53,4 +54,4 @@
 #include "Includes/Routines_Disasm.c"
 #include "Includes/BeaEngineVersion.c"
 
-void BeaEngine(void){return;}
+void BeaEngine(void){ return; }
