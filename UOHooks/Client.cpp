@@ -5,7 +5,6 @@ namespace Client
 {
 	BYTE *codeBase, *codeEnd, *dataBase, *dataEnd;
 	DWORD base;
-	PIMAGE_OPTIONAL_HEADER optionalHeader;
 	PIMAGE_IMPORT_DESCRIPTOR imports;
 
 	void Init()
@@ -13,13 +12,13 @@ namespace Client
 		base = (DWORD)GetModuleHandle(nullptr);
 		auto idh = (PIMAGE_DOS_HEADER)base;
 		auto inh = (PIMAGE_NT_HEADERS)(base + idh->e_lfanew);
-		optionalHeader = &inh->OptionalHeader;
-		imports = (PIMAGE_IMPORT_DESCRIPTOR)(base + optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+		auto ioh = &inh->OptionalHeader;
+		imports = (PIMAGE_IMPORT_DESCRIPTOR)(base + ioh->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
-		codeBase = (BYTE*)(base + optionalHeader->BaseOfCode);
-		codeEnd = codeBase + optionalHeader->SizeOfCode;
-		dataBase = (BYTE*)(base + optionalHeader->BaseOfData);
-		dataEnd = dataBase + optionalHeader->SizeOfInitializedData;
+		codeBase = (BYTE*)(base + ioh->BaseOfCode);
+		codeEnd = codeBase + ioh->SizeOfCode;
+		dataBase = (BYTE*)(base + ioh->BaseOfData);
+		dataEnd = dataBase + ioh->SizeOfInitializedData;
 	}
 
 	bool FindCode(BYTE *signature, size_t len, BYTE **offset) { return Find(signature, len, offset, codeBase, codeEnd); }

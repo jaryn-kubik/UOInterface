@@ -7,3 +7,6 @@
 
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Shlwapi.lib")
+
+#define BEA_ENGINE_STATIC
+#define BEA_USE_STDCALL

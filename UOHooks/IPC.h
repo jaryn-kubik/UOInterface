@@ -13,4 +13,6 @@ namespace IPC
 	extern "C" __declspec(dllexport) DWORD WINAPI OnAttach(LPVOID pId);
 	BOOL Send(UOMessage msg, UINT arg1 = 0, UINT arg2 = 0, UINT arg3 = 0);
 	BOOL SendData(UOMessage msg, LPVOID data, UINT len);
+	void SetHWND(HWND handle);
+	void Process(WPARAM wParam, LPARAM lParam);
 }

@@ -57,6 +57,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>crt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -74,21 +75,55 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <IgnoreSpecificDefaultLibraries>crt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BeaEngine\Includes\instr_set\Data_opcode.h" />
+    <ClInclude Include="BeaEngine\Includes\internal_datas.h" />
+    <ClInclude Include="BeaEngine\Includes\protos.h" />
     <ClInclude Include="Client.h" />
+    <ClInclude Include="Disasm.h" />
     <ClInclude Include="ImportHooks.h" />
     <ClInclude Include="IPC.h" />
+    <ClInclude Include="MainHook.h" />
     <ClInclude Include="OtherHooks.h" />
     <ClInclude Include="PacketHooks.h" />
     <ClInclude Include="Patches.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BeaEngine\BeaEngine.c" />
+    <ClCompile Include="BeaEngine\Includes\BeaEngineVersion.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_AES.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_A_M.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_CLMUL.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_FPU.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp1.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp12.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp13.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp14.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp15.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp16.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp2.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp3.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp4.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp5.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp6.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp7.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp8.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp9.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_MMX.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_N_Z.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_prefixes.c" />
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_SSE.c" />
+    <ClCompile Include="BeaEngine\Includes\Routines_Disasm.c" />
+    <ClCompile Include="BeaEngine\Includes\Routines_ModRM.c" />
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="Disasm.cpp" />
     <ClCompile Include="ImportHooks.cpp" />
     <ClCompile Include="IPC.cpp" />
+    <ClCompile Include="MainHook.cpp" />
     <ClCompile Include="OtherHooks.cpp" />
     <ClCompile Include="PacketHooks.cpp" />
     <ClCompile Include="Patches.cpp" />
@@ -96,6 +131,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="BeaEngine\COPYING.LESSER.txt" />
+    <Text Include="BeaEngine\COPYING.txt" />
+    <Text Include="BeaEngine\README.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

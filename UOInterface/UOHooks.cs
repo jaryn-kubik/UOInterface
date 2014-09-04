@@ -20,6 +20,8 @@ namespace UOInterface
         private readonly unsafe int* msgIn, msgOut;
         private readonly IntPtr sentIn, handledIn, sentOut, handledOut;
         private readonly object syncRoot = new object();
+        private int nextIn, nextOut;
+        private const int BufferSize = 0x80000;
 
         private unsafe UOHooks(int pId, IntPtr sharedMemory, OnUOMessage handler)
         {
@@ -28,9 +30,9 @@ namespace UOInterface
             Version = new Version(v.FileMajorPart, v.FileMinorPart, v.FileBuildPart, v.FilePrivatePart);
 
             dataIn = (byte*)sharedMemory.ToPointer();
-            dataOut = dataIn + 0x10000;
+            dataOut = dataIn + BufferSize;
 
-            msgIn = (int*)(dataOut + 0x10000);
+            msgIn = (int*)(dataOut + BufferSize);
             msgOut = msgIn + 4;
 
             uint[] packetTable = new uint[0x100];
@@ -59,16 +61,21 @@ namespace UOInterface
             }
         }
 
-        public unsafe int SendData(UOMessage msg, byte[] buffer, int len)
+        public unsafe void SendData(UOMessage msg, byte[] buffer, int len)
         {
             lock (syncRoot)
             {
-                msgOut[0] = (int)msg;
+                if (nextOut + len > BufferSize)
+                    throw new InternalBufferOverflowException();
+
                 fixed (byte* b = buffer)
-                    memcpy(dataOut, b, len);
+                    memcpy(dataOut + nextOut, b, len);
+
+                msgOut[0] = (int)msg;
                 msgOut[1] = len;
+                msgOut[2] = nextOut;
                 SignalObjectAndWait(sentOut, handledOut);
-                return msgOut[0];
+                nextOut = msgOut[0];
             }
         }
 

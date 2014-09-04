@@ -9,6 +9,15 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="BeaEngine">
+      <UniqueIdentifier>{7adda871-20f8-4b37-a324-2e94f47606d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BeaEngine\Includes">
+      <UniqueIdentifier>{bd049275-38fb-404a-b31d-a105c89c7381}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BeaEngine\Includes\instr_set">
+      <UniqueIdentifier>{b5342b40-58c0-4350-99ad-eec5724cd74f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -31,6 +40,21 @@
     </ClInclude>
     <ClInclude Include="OtherHooks.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MainHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Disasm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BeaEngine\Includes\internal_datas.h">
+      <Filter>BeaEngine\Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="BeaEngine\Includes\protos.h">
+      <Filter>BeaEngine\Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="BeaEngine\Includes\instr_set\Data_opcode.h">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -55,5 +79,100 @@
     <ClCompile Include="OtherHooks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MainHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Disasm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\BeaEngine.c">
+      <Filter>BeaEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\BeaEngineVersion.c">
+      <Filter>BeaEngine\Includes</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\Routines_Disasm.c">
+      <Filter>BeaEngine\Includes</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\Routines_ModRM.c">
+      <Filter>BeaEngine\Includes</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_A_M.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_AES.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_CLMUL.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_FPU.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp1.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp2.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp3.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp4.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp5.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp6.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp7.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp8.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp9.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp12.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp13.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp14.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp15.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_Grp16.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_MMX.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_N_Z.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_prefixes.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+    <ClCompile Include="BeaEngine\Includes\instr_set\opcodes_SSE.c">
+      <Filter>BeaEngine\Includes\instr_set</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="BeaEngine\COPYING.LESSER.txt">
+      <Filter>BeaEngine</Filter>
+    </Text>
+    <Text Include="BeaEngine\COPYING.txt">
+      <Filter>BeaEngine</Filter>
+    </Text>
+    <Text Include="BeaEngine\README.txt">
+      <Filter>BeaEngine</Filter>
+    </Text>
   </ItemGroup>
 </Project>

@@ -76,7 +76,7 @@ namespace Hooks
 			break;
 
 		case WM_CREATE:
-			IPC::Send(IPC::Ready, (UINT)hwnd);
+			IPC::SetHWND(hwnd);
 			break;
 		}
 		return oldWndProc(hwnd, msg, wParam, lParam);

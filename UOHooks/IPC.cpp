@@ -6,22 +6,40 @@
 #include "OtherHooks.h"
 #include "Patches.h"
 #include <thread>
+#include <atomic>
 
-//#define DEBUG_CONSOLE
+#define DEBUG_CONSOLE
 #ifdef DEBUG_CONSOLE
 #include <io.h>
 #include <fcntl.h>
 #endif
+#include "MainHook.h"
 
 namespace IPC
 {
+	const int UOBUFFER_SIZE = 0x80000;
 	struct SharedMemory
 	{
-		BYTE dataOut[0x10000];
-		BYTE dataIn[0x10000];
+		BYTE dataOut[UOBUFFER_SIZE];
+		BYTE dataIn[UOBUFFER_SIZE];
 		UINT msgOut[4];
 		UINT msgIn[4];
 	} *shared;
+
+	HWND hwnd;
+	UINT nextOut, nextIn;
+	std::atomic_flag lock = ATOMIC_FLAG_INIT;
+	void QueuePacket()
+	{
+		while (lock.test_and_set(std::memory_order_acquire));
+
+		if (shared->msgIn[2] == nextIn)
+			nextIn += shared->msgIn[1];
+		shared->msgIn[0] = nextIn;
+
+		lock.clear(std::memory_order_release);
+		PostMessage(hwnd, WM_USER, shared->msgIn[0], shared->msgIn[2]);
+	}
 
 	HANDLE sentOut, handledOut, sentIn, handledIn;
 	void MessagePump()
@@ -32,10 +50,8 @@ namespace IPC
 			switch (shared->msgIn[0])
 			{
 			case PacketToClient:
-				Hooks::RecvPacket(shared->dataIn);
-				break;
 			case PacketToServer:
-				Hooks::SendPacket(shared->dataIn);
+				QueuePacket();
 				break;
 			case ConnectionInfo:
 				Hooks::SetConnectionInfo(shared->msgIn[1], shared->msgIn[2]);
@@ -49,9 +65,26 @@ namespace IPC
 				Hooks::SetGameSize(shared->msgIn[1], shared->msgIn[2]);
 				break;
 			}
-			shared->msgIn[0] = 0;
 			SignalObjectAndWait(handledIn, sentIn, INFINITE, FALSE);
 		}
+	}
+
+	void Process(WPARAM msg, LPARAM offset)
+	{
+		switch (msg)
+		{
+		case PacketToClient:
+			Hooks::RecvPacket(shared->dataIn + offset);
+			break;
+		case PacketToServer:
+			Hooks::SendPacket(shared->dataIn + offset);
+			break;
+		}
+
+		while (lock.test_and_set(std::memory_order_acquire));
+		if (nextIn > offset && offset > UOBUFFER_SIZE / 2)
+			nextIn = 0;
+		lock.clear(std::memory_order_release);
 	}
 
 	HANDLE Duplicate(HANDLE hProcess, HANDLE handle)
@@ -74,6 +107,7 @@ namespace IPC
 #endif
 		try
 		{
+			Hooks::pica();
 			HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, (DWORD)pId);
 			if (!hProcess)
 				throw L"OpenProcess";
@@ -136,5 +170,11 @@ namespace IPC
 		if (shared->msgOut[0] == 2)
 			memcpy(data, shared->dataOut, len);
 		return shared->msgOut[0] == 1;
+	}
+
+	void SetHWND(HWND handle)
+	{
+		hwnd = handle;
+		Send(Ready, (UINT)hwnd);
 	}
 }
