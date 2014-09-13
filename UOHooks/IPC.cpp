@@ -9,11 +9,7 @@
 #include <atomic>
 
 #define DEBUG_CONSOLE
-#ifdef DEBUG_CONSOLE
-#include <io.h>
-#include <fcntl.h>
-#endif
-#include "MainHook.h"
+#include "Debug.h"
 
 namespace IPC
 {
@@ -38,7 +34,7 @@ namespace IPC
 		shared->msgIn[0] = nextIn;
 
 		lock.clear(std::memory_order_release);
-		PostMessage(hwnd, WM_USER, shared->msgIn[0], shared->msgIn[2]);
+		//PostMessage(hwnd, WM_USER, shared->msgIn[0], shared->msgIn[2]);
 	}
 
 	HANDLE sentOut, handledOut, sentIn, handledIn;
@@ -55,8 +51,6 @@ namespace IPC
 				break;
 			case ConnectionInfo:
 				Hooks::SetConnectionInfo(shared->msgIn[1], shared->msgIn[2]);
-				if (shared->msgIn[3])
-					Patches::Encryption();
 				break;
 			case Pathfinding:
 				Hooks::Pathfind(shared->msgIn[1], shared->msgIn[2], shared->msgIn[3]);
@@ -69,22 +63,22 @@ namespace IPC
 		}
 	}
 
-	void Process(WPARAM msg, LPARAM offset)
+	void Process()
 	{
-		switch (msg)
+		/*switch (msg)
 		{
 		case PacketToClient:
-			Hooks::RecvPacket(shared->dataIn + offset);
-			break;
+		Hooks::RecvPacket(shared->dataIn + offset);
+		break;
 		case PacketToServer:
-			Hooks::SendPacket(shared->dataIn + offset);
-			break;
+		Hooks::SendPacket(shared->dataIn + offset);
+		break;
 		}
 
 		while (lock.test_and_set(std::memory_order_acquire));
 		if (nextIn > offset && offset > UOBUFFER_SIZE / 2)
-			nextIn = 0;
-		lock.clear(std::memory_order_release);
+		nextIn = 0;
+		lock.clear(std::memory_order_release);*/
 	}
 
 	HANDLE Duplicate(HANDLE hProcess, HANDLE handle)
@@ -95,20 +89,14 @@ namespace IPC
 		return newHandle;
 	}
 
-	extern "C" __declspec(dllexport) DWORD WINAPI OnAttach(LPVOID pId)
+	extern "C" __declspec(dllexport) DWORD WINAPI OnAttach(LPDWORD args)
 	{
 #ifdef DEBUG_CONSOLE
-		AllocConsole();
-		HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
-		int hCrt = _open_osfhandle((long)handle_out, _O_TEXT);
-		FILE* hf_out = _fdopen(hCrt, "w");
-		setvbuf(hf_out, nullptr, _IONBF, 1);
-		*stdout = *hf_out;
+		Debug::ShowConsole();
 #endif
 		try
 		{
-			Hooks::pica();
-			HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, (DWORD)pId);
+			HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, args[0]);
 			if (!hProcess)
 				throw L"OpenProcess";
 
@@ -136,12 +124,16 @@ namespace IPC
 			CloseHandle(hProcess);
 
 			//init UOHooks
-			Client::Init();
-			Hooks::Imports();
-			Hooks::Packets();
-			Hooks::Other();
-			Patches::Multi();
-			Patches::Intro();
+			Debug d;
+			Client client;
+			Hooks::Imports(client);
+			Hooks::Packets(client);
+			Hooks::Other(client);
+			if (args[1])
+				Patches::Encryption(client);
+			Patches::Multi(client);
+			Patches::Intro(client);
+			d.Stop();
 			memcpy(shared->dataOut, Hooks::GetPacketTable(), 0x100 * sizeof(UINT));
 
 			std::thread(MessagePump).detach();//start ipc server

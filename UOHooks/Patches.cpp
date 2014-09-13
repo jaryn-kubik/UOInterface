@@ -1,87 +1,83 @@
 #include "stdafx.h"
 #include "Patches.h"
 #include "Client.h"
-#include <stdio.h>
+#include "PacketHooks.h"
 
 namespace Patches
 {
-	bool LoginEncryption()
+	bool ProtocolDecryption(Client &client)
 	{
-		//1.x - 5.x
-		unsigned char sig1[] = { 0x81, 0xF9, 0x00, 0x00, 0x01, 0x00, 0x0F, 0x8F };
-		//6.x - 7.x
-		unsigned char sig2[] = { 0x75, 0x12, 0x8B, 0x54, 0x24, 0x0C };
+		ud_instr iCmp{ UD_Icmp, { ud_arg::reg(UD_R_EDI), ud_arg::imm(0xFF) } };
 
-		bool result;
-		BYTE *offset;
-		if (result = Client::FindCode(sig1, &offset))
-			Client::Set<BYTE>(offset + 0x15, 0x84);
-		else if (result = Client::FindCode(sig2, &offset))
-			Client::Set<BYTE>(offset, 0xEB);
-		return result;
+		int i;
+		if (!client.Find((LPVOID)Hooks::vtbl[5], &i))
+			return false;//get fifth function in socket vtbl
+
+		if (!client.Find(iCmp, &i, 32))
+			return false;//find cmp, -1 in this function
+
+		int dest = i += 2;
+		if (!client.Find(UD_Ijz, &dest, 4))
+			return false;//find conditional jump after cmp
+
+		client.Hook(i, client[dest].destination(), 3);
+		return true;
 	}
 
-	bool TwoFishEncryption()
+	bool LoginEncryption(Client &client)
 	{
-		//3.x - 5.x
-		unsigned char sig1[] = { 0x8B, 0xD9, 0x8B, 0xC8, 0x48, 0x85, 0xC9, 0x0F, 0x84 };
-		//6.x - 7.x
-		unsigned char sig2[] = { 0x74, 0x0F, 0x83, 0xB9, 0xB4, 0x00, 0x00, 0x00, 0x00 };
-		//3.x - 4.x
-		unsigned char sig3[] = { 0x81, 0xEC, 0x04, 0x01, 0x00, 0x00, 0x85, 0xC0, 0x53, 0x8B, 0xD9, 0x0F, 0x84 };
-		//1.x - 3.x
-		unsigned char sig4[] = { 0x5E, 0xC3, 0x8B, 0x86, 0xCC, 0xCC, 0xCC, 0xCC, 0x85, 0xC0, 0x74 };
+		ud_instr iRet{ UD_Iret, { ud_arg::imm(4) } };
+		ud_instr iCmp{ UD_Icmp, { ud_arg::reg(), ud_arg::imm(0x10000) } };
 
-		bool result;
-		BYTE *offset;
-		if (result = Client::FindCode(sig1, &offset))
-			Client::Set<BYTE>(offset + 8, 0x85);
-		else if (result = Client::FindCode(sig2, &offset))
-			Client::Set<BYTE>(offset, 0xEB);
-		else if (result = Client::FindCode(sig3, &offset))
-			Client::Set<BYTE>(offset + 0xC, 0x85);
+		int start;
+		if (!client.Find(Hooks::sendFunc, &start))
+			return false;//find beginning of the function
 
-		if (Client::FindCode(sig4, &offset))
-		{
-			Client::Set<BYTE>(offset + 8, 0x3B);
-			Client::Set<BYTE>(offset + 0x12, 0x3B);
-			result = true;
-		}
-		return result;
+		int end = start;
+		if (!client.Find(iRet, &end, 128))
+			return false;//find end of the function
+
+		int i = start;
+		if (!client.Find(iCmp, &i, end - start))	//find cmp, 0x10000 in this function
+			if (!client.FindAndFollow(UD_Icall, &i, start - end) || !client.Find(iCmp, &i, 16))
+				return false;//or in a call in this function
+
+		int dest = i += 2;
+		if (!client.Find(UD_Ijnz, &dest, 8))
+			return false;//find conditional jump after cmp
+
+		client.Hook(i, client[dest].destination());
+		return true;
 	}
 
-	bool ProtocolDecryption()
+	bool TwoFishEncryption(Client &client)
 	{
-		//3.x - 5.x
-		BYTE sig1[] = { 0x83, 0xFF, 0xFF, 0x0F, 0x84, 0xCC, 0xCC, 0xCC, 0xCC, 0x8B, 0x86, 0xCC, 0xCC, 0xCC, 0xCC, 0x85, 0xC0 };
-		//6.x - 7.x
-		BYTE sig2[] = { 0x74, 0x37, 0x83, 0xBE, 0xB4, 0x00, 0x00, 0x00, 0x00 };
-		//3.x
-		BYTE sig3[] = { 0x33, 0xFF, 0x3B, 0xFD, 0x0F, 0x85 };
-		//1.x - 4.x
-		BYTE sig4[] = { 0x8B, 0xF8, 0x83, 0xFF, 0xFF, 0x74, 0xCC, 0x8B, 0x86 };
+		int i;
+		if (!client.Find((LPVOID)Hooks::vtbl[6], &i))
+			return false;//get sixth function in socket vtbl
 
-		bool result;
-		BYTE *offset;
-		if (result = Client::FindCode(sig1, &offset))
-			Client::Set<BYTE>(offset + 0xF, 0x3B);
-		else if (result = Client::FindCode(sig2, &offset))
-			Client::Set<BYTE>(offset, 0xEB);
-		else if (result = Client::FindCode(sig3, &offset))
-			Client::Set<BYTE>(offset + 0x1A, 0x3B);
-		else if (result = Client::FindCode(sig4, &offset))
-			Client::Set<BYTE>(offset + 0xD, 0x3B);
-		return result;
+		if (!client.FindAndFollow(UD_Icall, &i, 4))
+			return false;//follow first call
+
+		if (!client.FindAndFollow(UD_Ijnz, &i, 8))
+			return false;//follow first jnz
+
+		int dest = i;
+		if (!client.Find(UD_Ijz, &dest, 4))
+			return false;//find next jz
+
+		client.Hook(i, client[dest].destination());
+		return true;
 	}
 
-	void Encryption()
+	void Encryption(Client &client)
 	{
-		if (!LoginEncryption())
-			throw L"PatchEncryption: LoginEncryption";
-		if (!TwoFishEncryption())
-			throw L"PatchEncryption: TwoFishEncryption";
-		if (!ProtocolDecryption())
+		if (!ProtocolDecryption(client))
 			throw L"PatchEncryption: ProtocolDecryption";
+		if (!LoginEncryption(client))
+			throw L"PatchEncryption: LoginEncryption";
+		if (!TwoFishEncryption(client))
+			throw L"PatchEncryption: TwoFishEncryption";
 	}
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
@@ -117,18 +113,18 @@ namespace Patches
 		return CreateMutexA(lpMutexAttributes, bInitialOwner, lpName);
 	}
 
-	void Multi()
+	void Multi(Client &client)
 	{
-		if (!Client::Hook("user32.dll", "FindWindowA", Hook_FindWindowA))
+		if (!client.Hook("user32.dll", "FindWindowA", Hook_FindWindowA))
 			throw L"PatchMulti: FindWindowA";
 
-		if (!Client::Hook("kernel32.dll", "CreateFileMappingA", Hook_CreateFileMappingA))
+		if (!client.Hook("kernel32.dll", "CreateFileMappingA", Hook_CreateFileMappingA))
 			throw L"PatchMulti: CreateFileMappingA";
 
-		if (!Client::Hook("kernel32.dll", "OpenMutexA", Hook_OpenMutexA))
+		if (!client.Hook("kernel32.dll", "OpenMutexA", Hook_OpenMutexA))
 			throw L"PatchMulti: OpenMutexA";
 
-		if (!Client::Hook("kernel32.dll", "CreateMutexA", Hook_CreateMutexA))
+		if (!client.Hook("kernel32.dll", "CreateMutexA", Hook_CreateMutexA))
 			throw L"PatchMulti: CreateMutexA";
 
 		sprintf_s(mutexName, "report_%d", GetCurrentProcessId());
@@ -136,33 +132,34 @@ namespace Patches
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
-	void Intro()
+	void Intro(Client &client)
 	{
 		BYTE intro[10] = "intro.bik";
 		BYTE osilogo[12] = "osilogo.bik";
 		BYTE splash[12] = "Splash gump";
 
 		BYTE *offset;
-		if (Client::FindData(intro, &offset))
-			Client::Set<BYTE>(offset, '_');
+		if (client.Find(intro, &offset))
+			client.Set<BYTE>(offset, '_');
 
-		if (Client::FindData(osilogo, &offset))
-			Client::Set<BYTE>(offset, '_');
+		if (client.Find(osilogo, &offset))
+			client.Set<BYTE>(offset, '_');
 
-		if (Client::FindData(splash, &offset))
+		if (client.Find(splash, &offset))
 		{
-			//mov		dword ptr [esi+8], offset aSplashGump ; "Splash gump"
-			BYTE sig[] = { 0xC7, 0x46, 0x08, 0x00, 0x00, 0x00, 0x00 };
-			*(UINT*)(sig + 3) = (UINT)offset;
+			ud_instr iSplash{ UD_Imov, { ud_arg::mem(UD_R_ESI, 8), ud_arg::imm((UINT)offset) } };
+			ud_instr iTimeout{ UD_Imov, { ud_arg::reg(UD_R_EAX), ud_arg::mem(UD_R_ESP) } };
 
-			if (Client::FindCode(sig, &offset))
+			int i;
+			if (client.Find(iSplash, &i) && client.Find(iTimeout, &i, 32))
 			{
+				BYTE *offset = (BYTE*)client[i].offset;
 				//xor eax, eax
-				Client::Set<BYTE>(offset + 0x30, 0x33);
-				Client::Set<BYTE>(offset + 0x30 + 1, 0xC0);
+				client.Set<BYTE>(offset, 0x33);
+				client.Set<BYTE>(offset + 1, 0xC0);
 				//xor eax, eax
-				Client::Set<BYTE>(offset + 0x30 + 2, 0x33);
-				Client::Set<BYTE>(offset + 0x30 + 3, 0xC0);
+				client.Set<BYTE>(offset + 2, 0x33);
+				client.Set<BYTE>(offset + 3, 0xC0);
 			}
 		}
 	}

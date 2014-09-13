@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "PacketHooks.h"
-#include "Client.h"
 #include "IPC.h"
 #include <atomic>
 
@@ -8,7 +7,7 @@ namespace Hooks
 {
 	struct PacketInfo{ UINT id, unknown, len; };
 	UINT packetTable[0x100];
-	bool FindPacketTable()
+	bool FindPacketTable(Client &client)
 	{
 		unsigned char sig[] =
 		{
@@ -18,7 +17,7 @@ namespace Hooks
 		};
 
 		BYTE *offset;
-		if (!Client::FindData(sig, &offset))
+		if (!client.Find(sig, &offset))
 			return false;
 
 		PacketInfo *table = ((PacketInfo*)offset) - 1;
@@ -39,101 +38,69 @@ namespace Hooks
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
-	UINT networkObject;
-	UINT sendType;
-	LPVOID sendFunc, recvFunc;
-
-	BOOL __stdcall OnSend(BYTE *buffer)	{ return IPC::SendData(IPC::PacketToServer, buffer, GetPacketLength(buffer)); }
-	BOOL __stdcall OnRecv(BYTE *buffer)	{ return IPC::SendData(IPC::PacketToClient, buffer, GetPacketLength(buffer)); }
-
-	//calls the original send function (restores overriden code)
-	__inline void __declspec(naked) __stdcall SendFunc()
+	UINT *vtbl, *networkObject;
+	bool FindNetworkObject(Client &client)
 	{
-		_asm
+		ud_instr sig[] =
 		{
-			cmp		sendType, 2;
-			je		end2;
-
-			push    ebx;
-			push    ebp;
-			push    esi;
-			mov     esi, [esp + 0Ch + 4];
-			jmp		sendFunc;
-
-		end2:
-			push	ebx;
-			push    esi;
-			mov		esi, [esp + 08h + 4];
-			jmp		sendFunc;
-		}
-	}
-
-	__inline void __declspec(naked) __stdcall SendHook()
-	{
-		_asm
-		{
-			//save state
-			push	eax;
-			push	ecx;
-			push    esi;
-
-			//save network object, call our packet handler
-			mov		networkObject, ecx;
-			mov		esi, [esp + 0Ch + 4];//buffer
-			push	esi;
-			call	OnSend;
-			test	eax, eax;
-
-			//restore state
-			pop		esi;
-			pop		ecx;
-			pop		eax;
-
-			jnz		filter;//if result is not zero (==true) -> filter the packet
-			jmp		SendFunc;//else jump back to original function
-
-		filter:
-			ret		4;
-		}
-	}
-
-	void SendPacket(BYTE *buffer)
-	{
-		_asm
-		{
-			push	ecx;
-			mov		ecx, networkObject;
-			push	buffer;
-			call	SendFunc;
-			pop		ecx;
-		}
-	}
-
-	bool HookSend()
-	{
-		BYTE sig1[] =
-		{
-			0x8D, 0x8B, 0x94, 0x00, 0x00, 0x00,		//lea		ecx, [ebx+94h]
-			0xE8, 0xCC, 0xCC, 0xCC, 0xCC,			//call		sub_XXYYXXYY
-			0x55,									//push		ebp
-			0x8D, 0x8B, 0xBC, 0x00, 0x00, 0x00		//lea		ecx, [ebx+0BCh]
+			ud_instr{ UD_Imov, { ud_arg::mem(UD_R_ESP), ud_arg::reg(UD_R_EAX) } },
+			ud_instr{ UD_Ijz, { ud_arg::jimm() } },
+			ud_instr{ UD_Imov, { ud_arg::reg(UD_R_ECX), ud_arg::reg(UD_R_ESI) } },
+			ud_instr{ UD_Icall, { ud_arg::jimm() } },
+			ud_instr{ UD_Imov, { ud_arg::mem(UD_R_ESI), ud_arg::imm() } },
+			ud_instr{ UD_Imov, { ud_arg::mem(), ud_arg::reg(UD_R_ESI) } }
 		};
 
-		BYTE sig2[] = {
-			0x0F, 0xB7, 0xD8, 0x0F, 0xB6, 0x06, 0x83, 0xC4,
-			0x04, 0x53, 0x50, 0x8D, 0x4F, 0x6C };
-
-		BYTE *offset;
-		if (Client::FindCode(sig1, &offset))
+		int i;
+		if (client.Find(sig, &i))
 		{
-			sendFunc = Client::Hook(offset - 0x22, &SendHook, 7);
-			sendType = 1;
+			vtbl = (UINT*)client[i + 4].args[1].val();
+			networkObject = (UINT*)client[i + 5].args[0].val();
 			return true;
 		}
-		if (Client::FindCode(sig2, &offset))
+		return false;
+	}
+
+	inline void CallNetworkFunc(LPVOID func, BYTE *buffer)
+	{
+		__asm
 		{
-			sendFunc = Client::Hook(offset - 0x0F, &SendHook, 6);
-			sendType = 2;
+			mov		ecx, [networkObject];
+			mov		ecx, [ecx];
+			push	buffer;
+			call	func;
+		}
+	}
+	//---------------------------------------------------------------------------//
+	//---------------------------------------------------------------------------//
+	//---------------------------------------------------------------------------//
+	LPVOID sendFunc;
+	inline void SendPacket(BYTE *buffer) { CallNetworkFunc(sendFunc, buffer); }
+	void __stdcall SendHook(BYTE *buffer)
+	{
+		if (!SendData(IPC::PacketToServer, buffer, GetPacketLength(buffer)))
+			SendPacket(buffer);
+	}
+
+	bool HookSend(Client &client)
+	{
+		ud_instr iPush{ UD_Ipush, { ud_arg::reg(UD_R_EBX) } };
+		ud_instr sig[] =
+		{
+			ud_instr{ UD_Ipush, { ud_arg::reg(UD_R_EAX) } },
+			ud_instr{ UD_Ilea, { ud_arg::reg(UD_R_ECX), ud_arg::mem() } },
+			ud_instr{ UD_Icall, { ud_arg::jimm() } },
+			ud_instr{ UD_Ipush, { ud_arg::reg() } },
+			ud_instr{ UD_Ilea, { ud_arg::reg(UD_R_ECX), ud_arg::mem() } },
+			ud_instr{ UD_Icall, { ud_arg::jimm() } },
+			ud_instr{ UD_Imov, { ud_arg::reg(UD_R_AL), ud_arg::mem(UD_R_ESI, 0) } },
+			ud_instr{ UD_Icmp, { ud_arg::reg(UD_R_AL), ud_arg::imm() } },
+		};
+
+		int i;
+		if (client.Find(sig, &i) && client.Find(UD_Icall, &i, -16) && client.Find(iPush, &i, -8))
+		{
+			sendFunc = client.Hook(client[i].offset, SendHook);
 			return true;
 		}
 		return false;
@@ -141,100 +108,32 @@ namespace Hooks
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
-	__inline void __declspec(naked) __stdcall RecvHook()
+	LPVOID recvFunc;
+	inline void RecvPacket(BYTE *buffer) { CallNetworkFunc(recvFunc, buffer); }
+	void __stdcall RecvHook(BYTE *buffer)
 	{
-		_asm
-		{
-			//save state
-			push	eax;
-			push	ecx;
-			push    esi;
-
-			//call our packet handler
-			mov		esi, [esp + 0Ch + 4];//buffer
-			push	esi;
-			call	OnRecv;
-			test	eax, eax;
-
-			//restore state
-			pop		esi;
-			pop		ecx;
-			pop		eax;
-
-			jnz		filter;//if result is not zero (==true) -> filter the packet
-			jmp		recvFunc;//else jump back to original function
-
-		filter:
-			ret		4;
-		}
+		if (!SendData(IPC::PacketToClient, buffer, GetPacketLength(buffer)))
+			RecvPacket(buffer);
 	}
 
-	void RecvPacket(BYTE* buffer)
+	bool HookRecv(Client &client)
 	{
-		_asm
-		{
-			push	ecx;
-			mov		ecx, networkObject;
-			push	buffer;
-			call	recvFunc;
-			pop		ecx;
-		}
-	}
-
-	bool HookRecv()
-	{
-		BYTE sig1[] =
-		{
-			0xE8, 0xCC, 0xCC, 0xCC, 0xCC,			//call		sub_XXYYXXYY
-			0xF7, 0xD8,								//neg		eax
-			0x1B, 0xC0,								//sbb		eax, eax
-			0xF7, 0xD8,								//neg		eax
-			0xC3									//retn
-		};
-
-		BYTE sig2[] =
-		{
-			0x56,									//push		esi
-			0x8B, 0xF1,								//mov		esi, ecx
-			0xE8, 0xCC, 0xCC, 0xCC, 0xCC,			//call		sub_4196C0
-			0xC7, 0x06, 0xCC, 0xCC, 0xCC, 0xCC,		//mov		dword ptr [esi], offset off_XXYYXXYY
-			0x8B, 0xC6,								//mov		eax, esi
-			0x5E,									//pop		esi
-			0xC3									//retn
-		};
-
-		BYTE *offset;
-		if (Client::FindCode(sig1, &offset))
-		{
-			UINT address = (UINT)offset;
-			if (Client::FindData((BYTE*)&address, 4, &offset))
-			{
-				UINT *pRecv = (UINT*)(offset + 8);
-				recvFunc = (LPVOID)*pRecv;
-				Client::Set(pRecv, (UINT)&RecvHook);
-				return true;
-			}
-		}
-
-		if (Client::FindCode(sig2, &offset))
-		{
-			UINT* vtbl = (UINT*)*((UINT*)(offset + 2));
-			recvFunc = (LPVOID)vtbl[8];
-			Client::Set(&vtbl[8], (UINT)&RecvHook);
-			return true;
-		}
-		return false;
+		recvFunc = (LPVOID)vtbl[8];
+		client.Set(&vtbl[8], (UINT)RecvHook);
+		return true;
 	}
 	//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||//
 	//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||//
 	//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||//
-	void Packets()
+	void Packets(Client &client)
 	{
-		if (!HookSend())
+		if (!FindNetworkObject(client))
+			throw L"PacketHooks: FindVtbl";
+		if (!HookSend(client))
 			throw L"PacketHooks: HookSend";
-		if (!HookRecv())
+		if (!HookRecv(client))
 			throw L"PacketHooks: HookRecv";
-		if (!FindPacketTable())
+		if (!FindPacketTable(client))
 			throw L"PacketHooks: FindPacketTable";
 	}
 }

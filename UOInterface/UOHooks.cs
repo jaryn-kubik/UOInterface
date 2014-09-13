@@ -93,13 +93,13 @@ namespace UOInterface
             } while (msg != UOMessage.Closing);
         }
 
-        public static unsafe UOHooks Start(string client, OnUOMessage handler)
+        public static unsafe UOHooks Start(string client, OnUOMessage handler, bool patchEncryption)
         {
             PROCESS_INFORMATION pi = CreateSuspendedProcess(client, null);
             try
             {
                 int id = Process.GetCurrentProcess().Id;
-                IntPtr mmf = InjectLibrary(pi.processId, "UOHooks.dll", "OnAttach", (IntPtr)id);
+                IntPtr mmf = InjectLibrary(pi.processId, "UOHooks.dll", "OnAttach", id, patchEncryption ? 1 : 0);
 
                 const int FILE_MAP_WRITE = 0x0002;
                 IntPtr sharedMemory = MapViewOfFile(mmf, FILE_MAP_WRITE, 0, 0, IntPtr.Zero);
@@ -111,7 +111,7 @@ namespace UOInterface
             finally { ResumeThread(pi.hThread); }
         }
 
-        private static IntPtr InjectLibrary(int pId, string dllName, string function, IntPtr arg)
+        private static IntPtr InjectLibrary(int pId, string dllName, string function, params int[] args)
         {
             FileInfo dll = new FileInfo(dllName);
             if (!dll.Exists)
@@ -128,11 +128,12 @@ namespace UOInterface
 
             byte[] asm = { 0xC2, 0x04, 0x00 };//retn 4
             byte[] data = Encoding.Unicode.GetBytes(dll.FullName + '\0');
+            IntPtr size = new IntPtr(Math.Max(data.Length, args.Length * 4));
 
             //allocate memory
             const int MEM_COMMIT = 0x1000;
             const int PAGE_EXECUTE_READWRITE = 0x40;
-            IntPtr pRemote = VirtualAllocEx(hProcess, IntPtr.Zero, (IntPtr)data.Length, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+            IntPtr pRemote = VirtualAllocEx(hProcess, IntPtr.Zero, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
             if (pRemote == IntPtr.Zero)
                 throw new Win32Exception("VirtualAllocEx");
 
@@ -149,11 +150,13 @@ namespace UOInterface
             //call specified function in target library
             IntPtr hDll = GetRemoteModuleHandle(hProcess, dllName);
             IntPtr pFunction = GetRemoteProcAddress(hProcess, hDll, function);
-            IntPtr result = CreateRemoteThread(hProcess, pFunction, arg);
+            for (int i = 0; i < args.Length; i++)
+                WriteProcessMemory(hProcess, pRemote + i * 4, BitConverter.GetBytes(args[i]));
+            IntPtr result = CreateRemoteThread(hProcess, pFunction, pRemote);
 
             //release resources
             const int MEM_RELEASE = 0x8000;
-            VirtualFreeEx(hProcess, pRemote, (IntPtr)data.Length, MEM_RELEASE);
+            VirtualFreeEx(hProcess, pRemote, size, MEM_RELEASE);
             CloseHandle(hProcess);
 
             return result;

@@ -1,34 +1,38 @@
 #include "stdafx.h"
 #include "OtherHooks.h"
-#include "Client.h"
+#include "IPC.h"
 
 namespace Hooks
 {
 	UINT pathfindingType;
 	LPVOID pathfindingFunc;
-	bool HookPathfinding()
+	bool HookPathfinding(Client &client)
 	{
-		BYTE sig1[] =
+		ud_instr sig1[] =
 		{
-			0x0F, 0xBF, 0x68, 0x24,					//movsx		ebp, word ptr [eax+24h]
-			0x0F, 0xBF, 0x50, 0x26,					//movsx		edx, word ptr [eax+26h]
-			0x0F, 0xBF, 0x40, 0x28					//movsx		eax, word ptr [eax+28h]
+			ud_instr{ UD_Imovsx, { ud_arg::reg(UD_R_EBP), ud_arg::mem(UD_R_EAX, 0x24) } },
+			ud_instr{ UD_Imovsx, { ud_arg::reg(UD_R_EDX), ud_arg::mem(UD_R_EAX, 0x26) } },
+			ud_instr{ UD_Imovsx, { ud_arg::reg(UD_R_EAX), ud_arg::mem(UD_R_EAX, 0x28) } }
 		};
 
-		BYTE sig2[] =
+		ud_instr sig2[] =
 		{
-			0x0F, 0xBF, 0x50, 0x26,					//movsx		edx, word ptr [eax+26h]
-			0x53,									//push		ebx
-			0x8B, 0x1D, 0xCC, 0xCC, 0xCC, 0xCC,		//mov		ebx, dword_XXYYXXYY
-			0x55									//push		ebp
+			ud_instr{ UD_Imovsx, { ud_arg::reg(UD_R_EDX), ud_arg::mem(UD_R_EAX, 0x26) } },
+			ud_instr{ UD_Ipush, { ud_arg::reg(UD_R_EBX) } },
+			ud_instr{ UD_Imov, { ud_arg::reg(UD_R_EBX), ud_arg::mem(UD_NONE) } },
+			ud_instr{ UD_Ipush, { ud_arg::reg(UD_R_EBP) } }
 		};
 
-		bool result;
-		if (result = Client::FindCode(sig1, (BYTE**)&pathfindingFunc))
+		int i;
+		if (client.Find(sig1, &i))
 			pathfindingType = 1;
-		else if (result = Client::FindCode(sig2, (BYTE**)&pathfindingFunc))
+		else if (client.Find(sig2, &i))
 			pathfindingType = 2;
-		return result;
+		else
+			return false;
+
+		pathfindingFunc = client[i].offset;
+		return true;
 	}
 
 	USHORT pathfindingData[0x15];
@@ -71,14 +75,14 @@ namespace Hooks
 	LPVOID gameSizeFunc;
 	int sizeW = 800, sizeH = 600;
 
-	__inline void __declspec(naked) __stdcall GameSizeHook()
+	void __declspec(naked) GameSizeHook()
 	{
 		_asm
 		{
 			mov		eax, [esp + 4];
-			mov		edx, 280h;
+			mov		edx, 640;
 			cmp		eax, edx;
-			mov		ecx, 1E0h;
+			mov		ecx, 480;
 			je		end;
 
 			mov		edx, sizeW;
@@ -90,20 +94,20 @@ namespace Hooks
 		}
 	}
 
-	bool HookGameSize()
+	bool HookGameSize(Client &client)
 	{
-		BYTE sig[] =
+		ud_instr sig[] =
 		{
-			0x8B, 0x44, 0x24, 0x04,					//mov		eax, [esp+arg_0]
-			0xBA, 0x80, 0x02, 0x00, 0x00,			//mov		edx, 280h
-			0x3B, 0xC2,								//cmp		eax, edx
-			0xB9, 0xE0, 0x01, 0x00, 0x00			//mov		ecx, 1E0h
+			ud_instr{ UD_Imov, { ud_arg::reg(UD_R_EAX), ud_arg::mem(UD_R_ESP, 4) } },
+			ud_instr{ UD_Imov, { ud_arg::reg(UD_R_EDX), ud_arg::imm(640) } },
+			ud_instr{ UD_Icmp, { ud_arg::reg(UD_R_EAX), ud_arg::reg(UD_R_EDX) } },
+			ud_instr{ UD_Imov, { ud_arg::reg(UD_R_ECX), ud_arg::imm(480) } }
 		};
 
-		BYTE *offset;
-		if (Client::FindCode(sig, &offset))
+		int i;
+		if (client.Find(sig, &i))
 		{
-			gameSizeFunc = Client::Hook(offset, &GameSizeHook, sizeof(sig));
+			gameSizeFunc = client.Hook(i, GameSizeHook, 4);
 			return true;
 		}
 		return false;
@@ -116,12 +120,53 @@ namespace Hooks
 		if (height > 0)
 			sizeH = height;
 	}
-
-	void Other()
+	//---------------------------------------------------------------------------//
+	//---------------------------------------------------------------------------//
+	//---------------------------------------------------------------------------//
+	LPVOID mainClose, mainRet;
+	void __declspec(naked) MainHook()
 	{
-		if (!HookPathfinding())
+		__asm
+		{
+			jz close;
+			call IPC::Process;
+			jmp mainRet;
+
+		close:
+			jmp mainClose;
+		}
+	}
+
+	bool HookMain(Client &client)
+	{
+		ud_instr sig[] =
+		{
+			ud_instr{ UD_Icall },
+			ud_instr{ UD_Itest, { ud_arg::reg(UD_R_EAX), ud_arg::reg(UD_R_EAX) } },
+			ud_instr{ UD_Ijnz },
+			ud_instr{ UD_Icmp, { ud_arg::mem(UD_R_ESP), ud_arg::imm(WM_QUIT) } },
+			ud_instr{ UD_Ijz }
+		};
+
+		int i;
+		if (client.Find(sig, &i))
+		{
+			mainClose = client[i + 4].destination();
+			mainRet = client.Hook(i + 4, MainHook);
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------//
+	//---------------------------------------------------------------------------//
+	//---------------------------------------------------------------------------//
+	void Other(Client &client)
+	{
+		if (!HookPathfinding(client))
 			throw L"Hooks: Pathfinding";
-		if (!HookGameSize())
+		if (!HookGameSize(client))
 			throw L"Hooks: GameSize";
+		if (!HookMain(client))
+			throw L"Hooks: Main";
 	}
 }

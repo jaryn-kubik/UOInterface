@@ -9,6 +9,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="libudis86">
+      <UniqueIdentifier>{b4406051-2dc4-4fab-97bc-a32dbee49a48}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -32,10 +35,19 @@
     <ClInclude Include="OtherHooks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MainHook.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="libudis86\extern.h">
+      <Filter>libudis86</Filter>
     </ClInclude>
-    <ClInclude Include="Disasm.h">
+    <ClInclude Include="libudis86\itab.h">
+      <Filter>libudis86</Filter>
+    </ClInclude>
+    <ClInclude Include="libudis86\udis86.h">
+      <Filter>libudis86</Filter>
+    </ClInclude>
+    <ClInclude Include="libudis86\types.h">
+      <Filter>libudis86</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -61,11 +73,18 @@
     <ClCompile Include="OtherHooks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MainHook.cpp">
+    <ClCompile Include="Debug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Disasm.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="libudis86\libudis86.lib">
+      <Filter>libudis86</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="libudis86\LICENSE">
+      <Filter>libudis86</Filter>
+    </None>
   </ItemGroup>
 </Project>

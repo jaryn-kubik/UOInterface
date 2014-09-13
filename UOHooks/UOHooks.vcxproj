@@ -81,10 +81,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />
-    <ClInclude Include="Disasm.h" />
+    <ClInclude Include="Debug.h" />
     <ClInclude Include="ImportHooks.h" />
     <ClInclude Include="IPC.h" />
-    <ClInclude Include="MainHook.h" />
+    <ClInclude Include="libudis86\extern.h" />
+    <ClInclude Include="libudis86\itab.h" />
+    <ClInclude Include="libudis86\types.h" />
+    <ClInclude Include="libudis86\udis86.h" />
     <ClInclude Include="OtherHooks.h" />
     <ClInclude Include="PacketHooks.h" />
     <ClInclude Include="Patches.h" />
@@ -92,10 +95,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
-    <ClCompile Include="Disasm.cpp" />
+    <ClCompile Include="Debug.cpp" />
     <ClCompile Include="ImportHooks.cpp" />
     <ClCompile Include="IPC.cpp" />
-    <ClCompile Include="MainHook.cpp" />
     <ClCompile Include="OtherHooks.cpp" />
     <ClCompile Include="PacketHooks.cpp" />
     <ClCompile Include="Patches.cpp" />
@@ -105,9 +107,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BeaEngine\BeaEngine.vcxproj">
-      <Project>{8f0883d2-e972-44b7-8da8-ae5566bde935}</Project>
-    </ProjectReference>
+    <Library Include="libudis86\libudis86.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="libudis86\LICENSE" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

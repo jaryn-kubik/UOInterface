@@ -14,8 +14,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UOInterface", "UOInterface\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectBrowser", "ObjectBrowser\ObjectBrowser.csproj", "{311804E1-B0FA-4CFD-9693-E6C7A69E9F47}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BeaEngine", "BeaEngine\BeaEngine.vcxproj", "{8F0883D2-E972-44B7-8DA8-AE5566BDE935}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,16 +64,6 @@ Global
 		{311804E1-B0FA-4CFD-9693-E6C7A69E9F47}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{311804E1-B0FA-4CFD-9693-E6C7A69E9F47}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{311804E1-B0FA-4CFD-9693-E6C7A69E9F47}.Release|Win32.ActiveCfg = Release|Any CPU
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Debug|Mixed Platforms.Build.0 = Debug|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Debug|Win32.ActiveCfg = Debug|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Debug|Win32.Build.0 = Debug|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Release|Any CPU.ActiveCfg = Release|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Release|Mixed Platforms.ActiveCfg = Release|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Release|Mixed Platforms.Build.0 = Release|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Release|Win32.ActiveCfg = Release|Win32
-		{8F0883D2-E972-44B7-8DA8-AE5566BDE935}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

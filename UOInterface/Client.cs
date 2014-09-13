@@ -22,7 +22,7 @@ namespace UOInterface
         public static event UnhandledExceptionEventHandler UnhandledException;
 
         private static UOHooks hooks;
-        public static unsafe void Start(string client) { hooks = UOHooks.Start(client, OnMessage); }
+        public static unsafe void Start(string client) { hooks = UOHooks.Start(client, OnMessage, PatchEncryption); }
 
         public static short GetPacketLength(byte id)
         {
@@ -49,7 +49,7 @@ namespace UOInterface
                 {
                     case UOMessage.Ready:
                         Ready = true;
-                        hooks.Send(UOMessage.ConnectionInfo, (int)ServerIP, ServerPort, PatchEncryption ? 1 : 0);
+                        hooks.Send(UOMessage.ConnectionInfo, (int)ServerIP, ServerPort);
                         hooks.Send(UOMessage.GameSize, Width, Height);
                         OnInit();
                         break;

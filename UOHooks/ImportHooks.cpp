@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "ImportHooks.h"
-#include "Client.h"
 #include "IPC.h"
 #include "WinSock2.h"
 #include <Shlwapi.h>
@@ -187,38 +186,38 @@ namespace Hooks
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
-	void Imports()
+	void Imports(Client &client)
 	{
 		GetModuleFileNameA(GetModuleHandle(nullptr), clientDirA, sizeof(clientDirA));
 		PathRemoveFileSpecA(clientDirA);
 		GetModuleFileNameW(GetModuleHandle(nullptr), clientDirW, sizeof(clientDirW));
 		PathRemoveFileSpecW(clientDirW);
 
-		if (!Client::Hook("kernel32.dll", "ExitProcess", Hook_ExitProcess))
+		if (!client.Hook("kernel32.dll", "ExitProcess", Hook_ExitProcess))
 			throw L"ImportHooks: ExitProcess";
 
-		bool result = Client::Hook("kernel32.dll", "GetCurrentDirectoryA", Hook_GetCurrentDirectoryA) |
-			Client::Hook("kernel32.dll", "GetCurrentDirectoryW", Hook_GetCurrentDirectoryW);
+		bool result = client.Hook("kernel32.dll", "GetCurrentDirectoryA", Hook_GetCurrentDirectoryA) |
+			client.Hook("kernel32.dll", "GetCurrentDirectoryW", Hook_GetCurrentDirectoryW);
 		if (!result)
 			throw L"ImportHooks: GetCurrentDirectory";
 
-		result = Client::Hook("kernel32.dll", "CreateFileA", Hook_CreateFileA) |
-			Client::Hook("kernel32.dll", "CreateFileW", Hook_CreateFileW);
+		result = client.Hook("kernel32.dll", "CreateFileA", Hook_CreateFileA) |
+			client.Hook("kernel32.dll", "CreateFileW", Hook_CreateFileW);
 		if (!result)
 			throw L"ImportHooks: CreateFile";
 
-		result = Client::Hook("user32.dll", "RegisterClassA", Hook_RegisterClassA) |
-			Client::Hook("user32.dll", "RegisterClassW", Hook_RegisterClassW);
+		result = client.Hook("user32.dll", "RegisterClassA", Hook_RegisterClassA) |
+			client.Hook("user32.dll", "RegisterClassW", Hook_RegisterClassW);
 		if (!result)
 			throw L"ImportHooks: RegisterClass";
 
-		result = Client::Hook("wsock32.dll", "connect", Hook_connect, 4) |
-			Client::Hook("WS2_32.dll", "connect", Hook_connect, 4);
+		result = client.Hook("wsock32.dll", "connect", Hook_connect, 4) |
+			client.Hook("WS2_32.dll", "connect", Hook_connect, 4);
 		if (!result)
 			throw L"ImportHooks: connect";
 
-		result = Client::Hook("wsock32.dll", "closesocket", Hook_closesocket, 3) |
-			Client::Hook("WS2_32.dll", "closesocket", Hook_closesocket, 3);
+		result = client.Hook("wsock32.dll", "closesocket", Hook_closesocket, 3) |
+			client.Hook("WS2_32.dll", "closesocket", Hook_closesocket, 3);
 		if (!result)
 			throw L"ImportHooks: closesocket";
 	}

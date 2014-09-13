@@ -27,6 +27,8 @@ namespace PacketLogger
             Client.PacketToClient += Client_PacketToClient;
             Client.PacketToServer += Client_PacketToServer;
 
+            //Client.Start("D:\\zzz\\uoclient\\client.exe");
+            //Client.Start("C:\\UO\\Auberon\\client.exe");
             Client.Start("C:\\UO\\Test\\client.exe");
             Console.WriteLine("Client version - " + Client.Version);
             close.WaitOne();
