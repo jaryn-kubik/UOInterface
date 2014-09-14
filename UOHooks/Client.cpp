@@ -25,6 +25,7 @@ Client::Client()
 	ud_set_input_buffer(&ud_obj, codeBase, codeEnd - codeBase);
 	ud_set_pc(&ud_obj, (UINT)codeBase);
 
+	data.reserve(0x100000);
 	while (ud_disassemble(&ud_obj))
 	{
 		if (ud_obj.mnemonic == UD_Iint3 || ud_obj.mnemonic == UD_Inop)//useless
@@ -72,27 +73,19 @@ bool matches(ud_instr &input, ud_instr &pattern)
 
 bool Client::Find(ud_instr instructions[], size_t len, int *index)
 {
-	int count = 0;
-	size_t size = data.size() - len;
-	for (size_t i = 0; i < size; i++)
+	int size = data.size() - len;
+	for (*index = 0; *index < size; (*index)++)
 	{
 		for (size_t j = 0; j < len; j++)
 		{
-			if (!matches(data[i + j], instructions[j]))
+			if (!matches(data[*index + j], instructions[j]))
 				break;
 
 			if (j == len - 1)
-			{
-				*index = i;
-				count++;
-				//return i;
-			}
+				return true;
 		}
 	}
-	if (count > 1)
-		throw L"v pici to je";
-	return count == 1;
-	//return -1;
+	return false;
 }
 
 bool Client::Find(ud_instr instr, int *index, int count)
@@ -126,7 +119,8 @@ bool Client::Find(BYTE *signature, size_t len, BYTE **offset)
 
 bool Client::Find(LPVOID offset, int *index)
 {
-	for (*index = 0; *index < data.size(); (*index)++)
+	int size = data.size();
+	for (*index = 0; *index < size; (*index)++)
 		if (data[*index].offset == offset)
 			return true;
 	return false;
@@ -134,7 +128,7 @@ bool Client::Find(LPVOID offset, int *index)
 
 LPVOID Client::Hook(LPVOID func, LPVOID hook)
 {
-	for (int i = 0; i < data.size(); i++)
+	for (size_t i = 0; i < data.size(); i++)
 	{
 		if (data[i].mnemonic() == UD_Icall &&
 			data[i].args[0].type == UD_OP_JIMM &&
@@ -151,7 +145,7 @@ LPVOID Client::Hook(LPVOID func, LPVOID hook)
 LPVOID Client::Hook(int index, LPVOID hook, UINT count)
 {
 	int size = 0;
-	for (int i = 0; i < count; i++)
+	for (size_t i = 0; i < count; i++)
 		size += data[index + i].size();
 
 	if (size < 5)

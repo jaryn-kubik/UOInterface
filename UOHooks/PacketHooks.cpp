@@ -84,24 +84,22 @@ namespace Hooks
 
 	bool HookSend(Client &client)
 	{
-		ud_instr iPush{ UD_Ipush, { ud_arg::reg(UD_R_EBX) } };
-		ud_instr sig[] =
-		{
-			ud_instr{ UD_Ipush, { ud_arg::reg(UD_R_EAX) } },
-			ud_instr{ UD_Ilea, { ud_arg::reg(UD_R_ECX), ud_arg::mem() } },
-			ud_instr{ UD_Icall, { ud_arg::jimm() } },
-			ud_instr{ UD_Ipush, { ud_arg::reg() } },
-			ud_instr{ UD_Ilea, { ud_arg::reg(UD_R_ECX), ud_arg::mem() } },
-			ud_instr{ UD_Icall, { ud_arg::jimm() } },
-			ud_instr{ UD_Imov, { ud_arg::reg(UD_R_AL), ud_arg::mem(UD_R_ESI, 0) } },
-			ud_instr{ UD_Icmp, { ud_arg::reg(UD_R_AL), ud_arg::imm() } },
-		};
+		BYTE logging[17] = "Logging into %s.";
 
-		int i;
-		if (client.Find(sig, &i) && client.Find(UD_Icall, &i, -16) && client.Find(iPush, &i, -8))
+		BYTE *offset;
+		if (client.Find(logging, &offset))
 		{
-			sendFunc = client.Hook(client[i].offset, SendHook);
-			return true;
+			ud_instr iSplash{ UD_Ipush, { ud_arg::imm((UINT)offset) } };
+			ud_instr iPush{ UD_Ipush, { ud_arg::imm(0x100) } };
+
+			int i;
+			if (client.Find(iSplash, &i) &&
+				client.Find(iPush, &i, -16) &&
+				client.FindAndFollow(UD_Icall, &i, -4))
+			{
+				sendFunc = client.Hook(client[i].offset, SendHook);
+				return true;
+			}
 		}
 		return false;
 	}

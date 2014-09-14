@@ -6,79 +6,78 @@
 #include "OtherHooks.h"
 #include "Patches.h"
 #include <thread>
-#include <atomic>
-
-#define DEBUG_CONSOLE
-#include "Debug.h"
+#include <queue>
+#include <array>
+#include <vector>
 
 namespace IPC
 {
-	const int UOBUFFER_SIZE = 0x80000;
+	const int UOBUFFER_SIZE = 0x10000;
 	struct SharedMemory
 	{
 		BYTE dataOut[UOBUFFER_SIZE];
 		BYTE dataIn[UOBUFFER_SIZE];
-		UINT msgOut[4];
-		UINT msgIn[4];
+		std::array<UINT, 4> msgOut;
+		std::array<UINT, 4> msgIn;
 	} *shared;
 
 	HWND hwnd;
-	UINT nextOut, nextIn;
-	std::atomic_flag lock = ATOMIC_FLAG_INIT;
-	void QueuePacket()
-	{
-		while (lock.test_and_set(std::memory_order_acquire));
-
-		if (shared->msgIn[2] == nextIn)
-			nextIn += shared->msgIn[1];
-		shared->msgIn[0] = nextIn;
-
-		lock.clear(std::memory_order_release);
-		//PostMessage(hwnd, WM_USER, shared->msgIn[0], shared->msgIn[2]);
-	}
+	std::queue<std::array<UINT, 4>> msgQueue;
+	std::queue<std::vector<BYTE>> dataQueue;
 
 	HANDLE sentOut, handledOut, sentIn, handledIn;
 	void MessagePump()
 	{
 		WaitForSingleObject(sentIn, INFINITE);
-		while (true)
+		do
 		{
 			switch (shared->msgIn[0])
 			{
 			case PacketToClient:
 			case PacketToServer:
-				QueuePacket();
+				dataQueue.emplace(shared->dataIn, shared->dataIn + shared->msgIn[1]);
+			case Pathfinding:
+				msgQueue.push(shared->msgIn);
 				break;
 			case ConnectionInfo:
 				Hooks::SetConnectionInfo(shared->msgIn[1], shared->msgIn[2]);
-				break;
-			case Pathfinding:
-				Hooks::Pathfind(shared->msgIn[1], shared->msgIn[2], shared->msgIn[3]);
 				break;
 			case GameSize:
 				Hooks::SetGameSize(shared->msgIn[1], shared->msgIn[2]);
 				break;
 			}
-			SignalObjectAndWait(handledIn, sentIn, INFINITE, FALSE);
-		}
+		} while (!SignalObjectAndWait(handledIn, sentIn, INFINITE, FALSE));
 	}
 
 	void Process()
 	{
-		/*switch (msg)
+		while (!msgQueue.empty())
 		{
-		case PacketToClient:
-		Hooks::RecvPacket(shared->dataIn + offset);
-		break;
-		case PacketToServer:
-		Hooks::SendPacket(shared->dataIn + offset);
-		break;
+			auto msg = msgQueue.front();
+			switch (msg[0])
+			{
+			case PacketToClient:
+				Hooks::RecvPacket(dataQueue.front().data());
+				dataQueue.pop();
+				break;
+			case PacketToServer:
+				Hooks::SendPacket(dataQueue.front().data());
+				dataQueue.pop();
+				break;
+			case Pathfinding:
+				Hooks::Pathfind(msg[1], msg[2], msg[3]);
+				break;
+			}
+			msgQueue.pop();
 		}
+	}
 
-		while (lock.test_and_set(std::memory_order_acquire));
-		if (nextIn > offset && offset > UOBUFFER_SIZE / 2)
-		nextIn = 0;
-		lock.clear(std::memory_order_release);*/
+	void CALLBACK OnExit(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+	{
+		CloseHandle(sentOut);
+		CloseHandle(handledOut);
+		CloseHandle(sentIn);
+		CloseHandle(handledIn);
 	}
 
 	HANDLE Duplicate(HANDLE hProcess, HANDLE handle)
@@ -91,12 +90,10 @@ namespace IPC
 
 	extern "C" __declspec(dllexport) DWORD WINAPI OnAttach(LPDWORD args)
 	{
-#ifdef DEBUG_CONSOLE
-		Debug::ShowConsole();
-#endif
 		try
 		{
-			HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, args[0]);
+			const DWORD access = PROCESS_DUP_HANDLE | PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | SYNCHRONIZE;
+			HANDLE hProcess = OpenProcess(access, FALSE, args[0]);
 			if (!hProcess)
 				throw L"OpenProcess";
 
@@ -108,6 +105,10 @@ namespace IPC
 			if (!shared)
 				throw L"MapViewOfFile";
 			HANDLE mmfRemote = Duplicate(hProcess, mmf);
+			CloseHandle(mmf);
+
+			if (!RegisterWaitForSingleObject(&mmf, hProcess, OnExit, nullptr, INFINITE, WT_EXECUTEONLYONCE))
+				throw L"RegisterWaitForSingleObject";
 			CloseHandle(mmf);
 
 			//init events
@@ -124,7 +125,6 @@ namespace IPC
 			CloseHandle(hProcess);
 
 			//init UOHooks
-			Debug d;
 			Client client;
 			Hooks::Imports(client);
 			Hooks::Packets(client);
@@ -133,7 +133,6 @@ namespace IPC
 				Patches::Encryption(client);
 			Patches::Multi(client);
 			Patches::Intro(client);
-			d.Stop();
 			memcpy(shared->dataOut, Hooks::GetPacketTable(), 0x100 * sizeof(UINT));
 
 			std::thread(MessagePump).detach();//start ipc server
@@ -143,22 +142,24 @@ namespace IPC
 		return 0;
 	}
 
-	BOOL Send(UOMessage msg, UINT arg1, UINT arg2, UINT arg3)
+	bool Send(UOMessage msg, UINT arg1, UINT arg2, UINT arg3)
 	{
 		shared->msgOut[0] = msg;
 		shared->msgOut[1] = arg1;
 		shared->msgOut[2] = arg2;
 		shared->msgOut[3] = arg3;
-		SignalObjectAndWait(sentOut, handledOut, INFINITE, FALSE);
+		if (SignalObjectAndWait(sentOut, handledOut, INFINITE, FALSE))
+			return false;
 		return shared->msgOut[0] == 1;
 	}
 
-	BOOL SendData(UOMessage msg, LPVOID data, UINT len)
+	bool SendData(UOMessage msg, LPVOID data, UINT len)
 	{
 		memcpy(shared->dataOut, data, len);
 		shared->msgOut[0] = msg;
 		shared->msgOut[1] = len;
-		SignalObjectAndWait(sentOut, handledOut, INFINITE, FALSE);
+		if (SignalObjectAndWait(sentOut, handledOut, INFINITE, FALSE))
+			return false;
 		if (shared->msgOut[0] == 2)
 			memcpy(data, shared->dataOut, len);
 		return shared->msgOut[0] == 1;

@@ -2,7 +2,7 @@
 #include "ImportHooks.h"
 #include "IPC.h"
 #include "WinSock2.h"
-#include <Shlwapi.h>
+#include <cstdlib>
 
 namespace Hooks
 {
@@ -83,7 +83,7 @@ namespace Hooks
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
-	CHAR clientDirA[MAX_PATH];
+	CHAR clientDirA[MAX_PATH], driveA[_MAX_DRIVE], dirA[_MAX_DIR];
 	DWORD WINAPI Hook_GetCurrentDirectoryA(DWORD nBufferLength, LPSTR lpBuffer)
 	{
 		size_t size = strnlen(clientDirA, MAX_PATH);
@@ -93,7 +93,7 @@ namespace Hooks
 		return size;
 	}
 
-	WCHAR clientDirW[MAX_PATH];
+	WCHAR clientDirW[MAX_PATH], driveW[_MAX_DRIVE], dirW[_MAX_DIR];
 	DWORD WINAPI Hook_GetCurrentDirectoryW(DWORD nBufferLength, LPWSTR lpBuffer)
 	{
 		size_t size = wcsnlen(clientDirW, MAX_PATH);
@@ -106,29 +106,19 @@ namespace Hooks
 	HANDLE WINAPI Hook_CreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 		LPSECURITY_ATTRIBUTES lpSecAtt, DWORD dwCreationDisposition, DWORD dwFlags, HANDLE hTemplate)
 	{
-		if (PathIsRelativeA(lpFileName))
-		{
-			CHAR path[MAX_PATH];
-			PathCombineA(path, clientDirA, lpFileName);
-			return CreateFileA(path, dwDesiredAccess, dwShareMode, lpSecAtt,
-				dwCreationDisposition, dwFlags, hTemplate);
-		}
-		return CreateFileA(lpFileName, dwDesiredAccess, dwShareMode, lpSecAtt,
-			dwCreationDisposition, dwFlags, hTemplate);
+		CHAR path[MAX_PATH], fnameA[_MAX_FNAME], extA[_MAX_EXT];
+		_splitpath_s(lpFileName, nullptr, 0, nullptr, 0, fnameA, _MAX_FNAME, extA, _MAX_EXT);
+		_makepath_s(path, driveA, dirA, fnameA, extA);
+		return CreateFileA(path, dwDesiredAccess, dwShareMode, lpSecAtt, dwCreationDisposition, dwFlags, hTemplate);
 	}
 
 	HANDLE WINAPI Hook_CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 		LPSECURITY_ATTRIBUTES lpSecAtt, DWORD dwCreationDisposition, DWORD dwFlags, HANDLE hTemplate)
 	{
-		if (PathIsRelativeW(lpFileName))
-		{
-			WCHAR path[MAX_PATH];
-			PathCombineW(path, clientDirW, lpFileName);
-			return CreateFileW(path, dwDesiredAccess, dwShareMode, lpSecAtt,
-				dwCreationDisposition, dwFlags, hTemplate);
-		}
-		return CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecAtt,
-			dwCreationDisposition, dwFlags, hTemplate);
+		WCHAR path[MAX_PATH], fnameW[_MAX_FNAME], extW[_MAX_EXT];
+		_wsplitpath_s(lpFileName, nullptr, 0, nullptr, 0, fnameW, _MAX_FNAME, extW, _MAX_EXT);
+		_wmakepath_s(path, driveW, dirW, fnameW, extW);
+		return CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecAtt, dwCreationDisposition, dwFlags, hTemplate);
 	}
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
@@ -189,9 +179,12 @@ namespace Hooks
 	void Imports(Client &client)
 	{
 		GetModuleFileNameA(GetModuleHandle(nullptr), clientDirA, sizeof(clientDirA));
-		PathRemoveFileSpecA(clientDirA);
+		_splitpath_s(clientDirA, driveA, _MAX_DRIVE, dirA, _MAX_DIR, nullptr, 0, nullptr, 0);
+		_makepath_s(clientDirA, driveA, dirA, nullptr, nullptr);
+
 		GetModuleFileNameW(GetModuleHandle(nullptr), clientDirW, sizeof(clientDirW));
-		PathRemoveFileSpecW(clientDirW);
+		_wsplitpath_s(clientDirW, driveW, _MAX_DRIVE, dirW, _MAX_DIR, nullptr, 0, nullptr, 0);
+		_wmakepath_s(clientDirW, driveW, dirW, nullptr, nullptr);
 
 		if (!client.Hook("kernel32.dll", "ExitProcess", Hook_ExitProcess))
 			throw L"ImportHooks: ExitProcess";

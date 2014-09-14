@@ -20,8 +20,7 @@ namespace UOInterface
         private readonly unsafe int* msgIn, msgOut;
         private readonly IntPtr sentIn, handledIn, sentOut, handledOut;
         private readonly object syncRoot = new object();
-        private int nextIn, nextOut;
-        private const int BufferSize = 0x80000;
+        private const int BufferSize = 0x10000;
 
         private unsafe UOHooks(int pId, IntPtr sharedMemory, OnUOMessage handler)
         {
@@ -61,21 +60,17 @@ namespace UOInterface
             }
         }
 
-        public unsafe void SendData(UOMessage msg, byte[] buffer, int len)
+        public unsafe int SendData(UOMessage msg, byte[] buffer, int len)
         {
             lock (syncRoot)
             {
-                if (nextOut + len > BufferSize)
-                    throw new InternalBufferOverflowException();
-
                 fixed (byte* b = buffer)
-                    memcpy(dataOut + nextOut, b, len);
+                    memcpy(dataOut, b, len);
 
                 msgOut[0] = (int)msg;
                 msgOut[1] = len;
-                msgOut[2] = nextOut;
                 SignalObjectAndWait(sentOut, handledOut);
-                nextOut = msgOut[0];
+                return msgOut[0];
             }
         }
 
