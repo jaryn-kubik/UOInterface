@@ -45,6 +45,7 @@
     <Compile Include="Actions.cs" />
     <Compile Include="Chat.cs" />
     <Compile Include="Client.cs" />
+    <Compile Include="EntityCollection.cs" />
     <Compile Include="Enums\Layer.cs" />
     <Compile Include="Enums\Other.cs">
       <SubType>Code</SubType>

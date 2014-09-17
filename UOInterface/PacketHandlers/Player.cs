@@ -7,7 +7,7 @@ namespace UOInterface
     {
         private static void OnLoginConfirm(Packet p)//0x1B
         {
-            mobilesToAdd.Add(Player = new PlayerMobile(p.ReadUInt()));
+            Mobiles.Add(Player = new PlayerMobile(p.ReadUInt()));
             p.Skip(4);//unknown
             Player.Graphic = p.ReadUShort();
             Player.Position = new Position(p.ReadUShort(), p.ReadUShort(), (sbyte)p.ReadUShort());
@@ -15,8 +15,8 @@ namespace UOInterface
             //p.Skip(9);//unknown
             //p.ReadUShort();//map width
             //p.ReadUShort();//map height
-            toProcess.Enqueue(Player);
-            ProcessDelta();
+            Player.ProcessDelta();
+            Mobiles.ProcessDelta();
         }
 
         private static void OnPlayerUpdate(Packet p)//0x20
@@ -36,15 +36,13 @@ namespace UOInterface
             Player.Position = new Position(x, y, p.ReadSByte());
 
             OnPlayerMoved();
-            toProcess.Enqueue(Player);
-            ProcessDelta();
+            Player.ProcessDelta();
         }
 
         private static void OnWarMode(Packet p) //0x72
         {
             Player.WarMode = p.ReadBool();
-            toProcess.Enqueue(Player);
-            ProcessDelta();
+            Player.ProcessDelta();
         }
 
         private static void OnSkillUpdate(Packet p)//0x3A
@@ -72,15 +70,13 @@ namespace UOInterface
                     Player.UpdateSkill(id, p.ReadUShort(), p.ReadUShort(), (SkillLock)p.ReadByte(), 100);
                     break;
             }
-            toProcess.Enqueue(Player);
-            ProcessDelta();
+            Player.ProcessDelta();
         }
 
         private static void OnChangeSkillLock(Packet p)//0x3A
         {
             Player.UpdateSkillLock(p.ReadUShort(), (SkillLock)p.ReadByte());
-            toProcess.Enqueue(Player);
-            ProcessDelta();
+            Player.ProcessDelta();
         }
     }
 }

@@ -48,6 +48,7 @@ namespace UOInterface
             //other
             Handlers.ToClient.Add(0x1D, OnRemoveObject, Priority.High);
             Handlers.ToClient.Add(0xBF, OnBigFuckingPacket, Priority.High);
+            Handlers.ToClient.Add(0xC8, OnChangeUpdateRange, Priority.High);
         }
 
         private static readonly Lazy<bool> useNewMobileIncoming = new Lazy<bool>(() => Client.Version >= new Version(7, 0, 33));

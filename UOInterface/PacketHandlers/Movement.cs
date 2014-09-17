@@ -22,8 +22,7 @@ namespace UOInterface
             ushort y = p.ReadUShort();
             Player.Direction = (Direction)p.ReadByte();
             Player.Position = new Position(x, y, p.ReadSByte());
-            toProcess.Enqueue(Player);
-            ProcessDelta();
+            Player.ProcessDelta();
         }
 
         private static void OnMovementAccepted(Packet p)//0x22
@@ -32,15 +31,13 @@ namespace UOInterface
             Player.Notoriety = (Notoriety)p.ReadByte();
             if (movementQueue.Count > 0)
                 ProcessMove(movementQueue.Dequeue());
-            toProcess.Enqueue(Player);
-            ProcessDelta();
+            Player.ProcessDelta();
         }
 
         private static void OnMovementDemand(Packet p) //0x97
         {
             ProcessMove((Direction)p.ReadByte());
-            toProcess.Enqueue(Player);
-            ProcessDelta();
+            Player.ProcessDelta();
         }
 
         private static void ProcessMove(Direction dir)
@@ -91,10 +88,13 @@ namespace UOInterface
 
         private static void OnPlayerMoved()
         {
-            foreach (Mobile m in Mobiles.Where(m => m.Distance > 20 && !party.Contains(m)))
+            foreach (Mobile m in Mobiles.Where(m => m.Distance > updateRange && !party.Contains(m)))
                 RemoveMobile(m);
-            foreach (Item i in Ground.Where(i => i.Distance > 20))
+            Mobiles.ProcessDelta();
+
+            foreach (Item i in Ground.Where(i => i.Distance > updateRange))
                 RemoveItem(i);
+            Items.ProcessDelta();
         }
     }
 }

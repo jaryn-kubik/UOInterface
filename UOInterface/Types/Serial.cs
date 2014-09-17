@@ -5,7 +5,7 @@ namespace UOInterface
 {
     public struct Serial : IComparable, IComparable<uint>
     {
-        public static readonly Serial Invalid = new Serial(uint.MaxValue);
+        public static readonly Serial Invalid = new Serial(0);
 
         private readonly uint value;
         public Serial(uint serial) { value = serial; }

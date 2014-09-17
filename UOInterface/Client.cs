@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UOInterface.Network;
 
 namespace UOInterface
@@ -112,12 +113,22 @@ namespace UOInterface
                 m.Invoke(null, null);
         }
 
-        internal static void OnException(Exception ex)
+        public static Task Catch(this Task task)
+        {
+            return task.ContinueWith(t =>
+            {
+                if (t.Exception != null)
+                    t.Exception.Handle(OnException);
+            }, TaskContinuationOptions.OnlyOnFaulted);
+        }
+
+        private static bool OnException(Exception ex)
         {
             var handler = UnhandledException;
             if (handler == null)
-                throw ex;
+                return false;
             handler(null, new UnhandledExceptionEventArgs(ex, false));
+            return true;
         }
     }
 

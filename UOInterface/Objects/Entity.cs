@@ -3,28 +3,28 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace UOInterface
 {
-    public class Entity
+    public abstract class Entity
     {
-        protected Entity(Serial serial) { Serial = serial; }
+        protected Entity(Serial serial)
+        {
+            Serial = serial;
+            Items = new EntityCollection<Item>();
+        }
 
-        private Serial serial;
         private Graphic graphic;
         private Hue hue;
         private string name;
         private Position position;
         private Direction direction;
         private UOFlags flags;
-        private readonly ConcurrentDictionary<int, UOProperty> properties = new ConcurrentDictionary<int, UOProperty>(1, 16);
-        private readonly ConcurrentDictionary<Serial, Item> items = new ConcurrentDictionary<Serial, Item>(1, 32);
+        private readonly ConcurrentDictionary<int, UOProperty> properties = new ConcurrentDictionary<int, UOProperty>();
 
-        public Serial Serial
-        {
-            get { return serial; }
-            internal set { serial = value; }
-        }
+        public EntityCollection<Item> Items { get; private set; }
+        public Serial Serial { get; private set; }
 
         public Graphic Graphic
         {
@@ -34,7 +34,7 @@ namespace UOInterface
                 if (graphic != value)
                 {
                     graphic = value;
-                    AddDelta(Delta.Appearance);
+                    delta |= Delta.Appearance;
                 }
             }
         }
@@ -47,7 +47,7 @@ namespace UOInterface
                 if (hue != value)
                 {
                     hue = value;
-                    AddDelta(Delta.Appearance);
+                    delta |= Delta.Appearance;
                 }
             }
         }
@@ -60,7 +60,7 @@ namespace UOInterface
                 if (name != value)
                 {
                     name = value;
-                    AddDelta(Delta.Appearance);
+                    delta |= Delta.Appearance;
                 }
             }
         }
@@ -73,7 +73,7 @@ namespace UOInterface
                 if (position != value)
                 {
                     position = value;
-                    AddDelta(Delta.Position);
+                    delta |= Delta.Position;
                 }
             }
         }
@@ -87,7 +87,7 @@ namespace UOInterface
                 if (direction != value)
                 {
                     direction = value;
-                    AddDelta(Delta.Position);
+                    delta |= Delta.Position;
                 }
             }
         }
@@ -100,7 +100,7 @@ namespace UOInterface
                 if (flags != value)
                 {
                     flags = value;
-                    AddDelta(Delta.Attributes);
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -112,34 +112,10 @@ namespace UOInterface
             int i = 0;
             foreach (UOProperty p in props)
                 properties.TryAdd(i++, p);
-            AddDelta(Delta.Properties);
-        }
-
-        private List<Item> added = new List<Item>(32), removed = new List<Item>(32);
-        public IEnumerable<Item> Items { get { return items.Select(item => item.Value); } }
-        internal void AddItem(Item item)
-        {
-            if (items.TryAdd(item.Serial, item))
-                lock (syncRoot)
-                    added.Add(item);
-        }
-
-        internal void RemoveItem(Item item)
-        {
-            if (items.TryRemove(item.serial, out item))
-                lock (syncRoot)
-                    removed.Add(item);
-        }
-
-        internal void Clear()
-        {
-            lock (syncRoot)
-                removed.AddRange(Items);
-            items.Clear();
+            delta |= Delta.Properties;
         }
 
         public event EventHandler AppearanceChanged, PositionChanged, AttributesChanged, PropertiesChanged;
-        public event EventHandler<CollectionChangedEventArgs<Item>> ItemsChanged;
         protected virtual void OnProcessDelta(Delta d)
         {
             if (d.HasFlag(Delta.Appearance))
@@ -155,28 +131,13 @@ namespace UOInterface
                 PropertiesChanged.Raise(this);
         }
 
-        private static readonly object syncRoot = new object();
-        private Delta delta;
-        protected void AddDelta(Delta d) { lock (syncRoot)delta |= d; }
+        protected Delta delta;
         internal void ProcessDelta()
         {
-            Delta d;
-            CollectionChangedEventArgs<Item> changed = null;
-            lock (syncRoot)
-            {
-                d = delta;
-                delta = Delta.None;
-                if (added.Count > 0 || removed.Count > 0)
-                {
-                    changed = new CollectionChangedEventArgs<Item>(added, removed);
-                    added = new List<Item>(32);
-                    removed = new List<Item>(32);
-                }
-            }
-
-            if (changed != null)
-                ItemsChanged.Raise(changed, this);
-            OnProcessDelta(d);
+            Delta d = delta;
+            Task.Run(() => OnProcessDelta(d)).Catch();
+            Items.ProcessDelta();
+            delta = Delta.None;
         }
 
         [Flags]

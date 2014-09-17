@@ -10,8 +10,8 @@ namespace ObjectBrowser
         {
             InitializeComponent();
 
-            World.ItemsChanged += World_ItemsChanged;
-            World.Cleared += World_Cleared;
+            World.Items.Added += Items_Added;
+            World.Items.Removed += Items_Removed;
             list.SelectionChanged += list_SelectionChanged;
         }
 
@@ -36,27 +36,25 @@ namespace ObjectBrowser
             e.Handled = true;
         }
 
-        private void World_ItemsChanged(object sender, CollectionChangedEventArgs<Item> e)
+        private void Items_Added(object sender, CollectionChangedEventArgs<Item> e)
         {
             Dispatcher.Invoke(() =>
             {
-                foreach (Item i in e.Added)
+                foreach (Item i in e)
                     list.Items.Add(i);
-                foreach (Item i in e.Removed)
+            });
+        }
+
+        private void Items_Removed(object sender, CollectionChangedEventArgs<Item> e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                foreach (Item i in e)
                 {
                     list.Items.Remove(i);
                     if (list.SelectedItem == i)
                         list.SelectedItem = null;
                 }
-            });
-        }
-
-        private void World_Cleared(object sender, EventArgs e)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                list.Items.Clear();
-                text.Clear();
             });
         }
 

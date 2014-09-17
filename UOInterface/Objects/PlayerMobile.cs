@@ -42,7 +42,7 @@ namespace UOInterface
                 if (strength != value)
                 {
                     strength = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -55,7 +55,7 @@ namespace UOInterface
                 if (intelligence != value)
                 {
                     intelligence = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -68,7 +68,7 @@ namespace UOInterface
                 if (dexterity != value)
                 {
                     dexterity = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -81,7 +81,7 @@ namespace UOInterface
                 if (weight != value)
                 {
                     weight = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -94,7 +94,7 @@ namespace UOInterface
                 if (weightMax != value)
                 {
                     weightMax = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -107,7 +107,7 @@ namespace UOInterface
                 if (gold != value)
                 {
                     gold = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -120,7 +120,7 @@ namespace UOInterface
                 if (resistPhysical != value)
                 {
                     resistPhysical = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace UOInterface
                 if (resistFire != value)
                 {
                     resistFire = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -146,7 +146,7 @@ namespace UOInterface
                 if (resistCold != value)
                 {
                     resistCold = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -159,7 +159,7 @@ namespace UOInterface
                 if (resistPoison != value)
                 {
                     resistPoison = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -172,7 +172,7 @@ namespace UOInterface
                 if (resistEnergy != value)
                 {
                     resistEnergy = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -185,7 +185,7 @@ namespace UOInterface
                 if (followers != value)
                 {
                     followers = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -198,7 +198,7 @@ namespace UOInterface
                 if (followersMax != value)
                 {
                     followersMax = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -211,7 +211,7 @@ namespace UOInterface
                 if (luck != value)
                 {
                     luck = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -224,7 +224,7 @@ namespace UOInterface
                 if (tithingPoints != value)
                 {
                     tithingPoints = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -237,7 +237,7 @@ namespace UOInterface
                 if (damageMin != value)
                 {
                     damageMin = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -250,7 +250,7 @@ namespace UOInterface
                 if (damageMax != value)
                 {
                     damageMax = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -263,7 +263,7 @@ namespace UOInterface
                 if (female != value)
                 {
                     female = value;
-                    AddDelta(Delta.Stats);
+                    delta |= Delta.Stats;
                 }
             }
         }
@@ -277,7 +277,7 @@ namespace UOInterface
                 skills[id].BaseFixed = baseValue;
                 skills[id].Lock = skillLock;
                 skills[id].CapFixed = cap;
-                AddDelta(Delta.Skills);
+                delta |= Delta.Skills;
             }
         }
 
@@ -286,7 +286,7 @@ namespace UOInterface
             if (id < skills.Length)
             {
                 skills[id].Lock = skillLock;
-                AddDelta(Delta.Skills);
+                delta |= Delta.Skills;
             }
         }
 

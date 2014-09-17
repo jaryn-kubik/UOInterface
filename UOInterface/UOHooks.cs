@@ -258,8 +258,8 @@ namespace UOInterface
         }
 
         #region Imports
-        [DllImport("msvcrt.dll"), SuppressUnmanagedCodeSecurity]
-        static extern unsafe void memcpy(void* to, void* from, int len);
+        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl), SuppressUnmanagedCodeSecurity]
+        static extern unsafe void* memcpy(void* to, void* from, int len);
 
         [DllImport("kernel32.dll"), SuppressUnmanagedCodeSecurity]
         static extern int WaitForSingleObject(IntPtr hHandle, int timeout = -1);

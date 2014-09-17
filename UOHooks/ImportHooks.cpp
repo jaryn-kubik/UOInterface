@@ -145,22 +145,22 @@ namespace Hooks
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
-	UINT connect_address;
-	USHORT connect_port;
+	UINT connectAddress;
+	USHORT connectPort;
 	void SetConnectionInfo(UINT address, USHORT port)
 	{
-		connect_address = address;
-		connect_port = port;
+		connectAddress = address;
+		connectPort = port;
 	}
 
 	SOCKET currentSocket;
 	int WINAPI Hook_connect(SOCKET s, sockaddr_in* inaddr, int namelen)
 	{
-		if (connect_address)
-			inaddr->sin_addr.s_addr = connect_address;
+		if (connectAddress)
+			inaddr->sin_addr.s_addr = connectAddress;
 
-		if (connect_port)
-			inaddr->sin_port = ntohs(connect_port);
+		if (connectPort)
+			inaddr->sin_port = ntohs(connectPort);
 
 		int result = connect(currentSocket = s, (sockaddr*)inaddr, namelen);
 		IPC::Send(IPC::Connected);

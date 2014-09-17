@@ -10,8 +10,8 @@ namespace ObjectBrowser
         {
             InitializeComponent();
 
-            World.MobilesChanged += World_MobilesChanged;
-            World.Cleared += World_Cleared;
+            World.Mobiles.Added += Mobiles_Added;
+            World.Mobiles.Removed += Mobiles_Removed;
             list.SelectionChanged += list_SelectionChanged;
         }
 
@@ -46,17 +46,23 @@ namespace ObjectBrowser
             e.Handled = true;
         }
 
-        private void World_MobilesChanged(object sender, CollectionChangedEventArgs<Mobile> e)
+        private void Mobiles_Added(object sender, CollectionChangedEventArgs<Mobile> e)
         {
             Dispatcher.Invoke(() =>
             {
-                foreach (Mobile m in e.Added)
+                foreach (Mobile m in e)
                 {
                     m.AppearanceChanged += Mobile_AppearanceChanged;
                     list.Items.Add(m);
                 }
+            });
+        }
 
-                foreach (Mobile m in e.Removed)
+        private void Mobiles_Removed(object sender, CollectionChangedEventArgs<Mobile> e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                foreach (Mobile m in e)
                 {
                     list.Items.Remove(m);
                     m.AppearanceChanged -= Mobile_AppearanceChanged;
@@ -64,15 +70,6 @@ namespace ObjectBrowser
                         list.SelectedItem = null;
                 }
             });
-        }
-
-        private void World_Cleared(object sender, EventArgs e)
-        {
-            Dispatcher.Invoke(() =>
-             {
-                 list.Items.Clear();
-                 text.Clear();
-             });
         }
 
         private void Mobile_AppearanceChanged(object sender, EventArgs e)

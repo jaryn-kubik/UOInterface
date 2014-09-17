@@ -25,7 +25,7 @@ namespace UOInterface
                 if (hits != value)
                 {
                     hits = value;
-                    AddDelta(Delta.Hits);
+                    delta |= Delta.Hits;
                 }
             }
         }
@@ -38,7 +38,7 @@ namespace UOInterface
                 if (hitsMax != value)
                 {
                     hitsMax = value;
-                    AddDelta(Delta.Hits);
+                    delta |= Delta.Hits;
                 }
             }
         }
@@ -51,7 +51,7 @@ namespace UOInterface
                 if (mana != value)
                 {
                     mana = value;
-                    AddDelta(Delta.Mana);
+                    delta |= Delta.Mana;
                 }
             }
         }
@@ -64,7 +64,7 @@ namespace UOInterface
                 if (manaMax != value)
                 {
                     manaMax = value;
-                    AddDelta(Delta.Mana);
+                    delta |= Delta.Mana;
                 }
             }
         }
@@ -77,7 +77,7 @@ namespace UOInterface
                 if (stamina != value)
                 {
                     stamina = value;
-                    AddDelta(Delta.Stamina);
+                    delta |= Delta.Stamina;
                 }
             }
         }
@@ -90,7 +90,7 @@ namespace UOInterface
                 if (staminaMax != value)
                 {
                     staminaMax = value;
-                    AddDelta(Delta.Stamina);
+                    delta |= Delta.Stamina;
                 }
             }
         }
@@ -103,7 +103,7 @@ namespace UOInterface
                 if (notoriety != value)
                 {
                     notoriety = value;
-                    AddDelta(Delta.Attributes);
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -116,7 +116,7 @@ namespace UOInterface
                 if (warMode != value)
                 {
                     warMode = value;
-                    AddDelta(Delta.Attributes);
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -129,7 +129,7 @@ namespace UOInterface
                 if (renamable != value)
                 {
                     renamable = value;
-                    AddDelta(Delta.Attributes);
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -150,7 +150,7 @@ namespace UOInterface
                 StaminaChanged.Raise(this);
         }
 
-        public override bool Exists { get { return World.ContainsMobile(Serial); } }
+        public override bool Exists { get { return World.Mobiles.Contains(Serial); } }
         protected override void ToString(StringBuilder sb)
         {
             sb.AppendLine();

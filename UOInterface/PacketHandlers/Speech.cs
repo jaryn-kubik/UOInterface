@@ -6,7 +6,7 @@ namespace UOInterface
     {
         private static void OnASCIIMessage(Packet p)//0x1C
         {
-            Entity entity = GetMobile(p.ReadUInt());
+            Entity entity = Mobiles.Get(p.ReadUInt());
             ushort graphic = p.ReadUShort();
             MessageType type = (MessageType)p.ReadByte();
             Hue hue = p.ReadUShort();
@@ -18,15 +18,14 @@ namespace UOInterface
             {
                 entity.Graphic = graphic;
                 entity.Name = name;
-                toProcess.Enqueue(entity);
-                ProcessDelta();
+                entity.ProcessDelta();
             }
             Chat.OnMessage(entity, new UOMessageEventArgs(text, hue, type, font));
         }
 
         private static void OnUnicodeMessage(Packet p)//0xAE
         {
-            Entity entity = GetMobile(p.ReadUInt());
+            Entity entity = Mobiles.Get(p.ReadUInt());
             ushort graphic = p.ReadUShort();
             MessageType type = (MessageType)p.ReadByte();
             Hue hue = p.ReadUShort();
@@ -39,15 +38,14 @@ namespace UOInterface
             {
                 entity.Graphic = graphic;
                 entity.Name = name;
-                toProcess.Enqueue(entity);
-                ProcessDelta();
+                entity.ProcessDelta();
             }
             Chat.OnMessage(entity, new UOMessageEventArgs(text, hue, type, font, lang));
         }
 
         private static void OnLocalizedMessage(Packet p)//0xC1
         {
-            Entity entity = GetMobile(p.ReadUInt());
+            Entity entity = Mobiles.Get(p.ReadUInt());
             ushort graphic = p.ReadUShort();
             MessageType type = (MessageType)p.ReadByte();
             Hue hue = p.ReadUShort();
@@ -60,15 +58,14 @@ namespace UOInterface
             {
                 entity.Graphic = graphic;
                 entity.Name = name;
-                toProcess.Enqueue(entity);
-                ProcessDelta();
+                entity.ProcessDelta();
             }
             Chat.OnLocalizedMessage(entity, new UOMessageEventArgs(text, hue, type, font, cliloc));
         }
 
         private static void OnLocalizedMessageAffix(Packet p)//0xCC
         {
-            Entity entity = GetMobile(p.ReadUInt());
+            Entity entity = Mobiles.Get(p.ReadUInt());
             ushort graphic = p.ReadUShort();
             MessageType type = (MessageType)p.ReadByte();
             Hue hue = p.ReadUShort();
@@ -83,8 +80,7 @@ namespace UOInterface
             {
                 entity.Graphic = graphic;
                 entity.Name = name;
-                toProcess.Enqueue(entity);
-                ProcessDelta();
+                entity.ProcessDelta();
             }
             Chat.OnLocalizedMessage(entity, new UOMessageEventArgs(text, hue, type, font, cliloc, affixType, affix));
         }

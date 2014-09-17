@@ -19,7 +19,7 @@ namespace UOInterface
                 if (amount != value)
                 {
                     amount = value;
-                    AddDelta(Delta.Attributes);
+                    delta |= Delta.Attributes;
                 }
             }
         }
@@ -32,7 +32,7 @@ namespace UOInterface
                 if (container != value)
                 {
                     container = value;
-                    AddDelta(Delta.Ownership);
+                    delta |= Delta.Ownership;
                 }
             }
         }
@@ -45,7 +45,7 @@ namespace UOInterface
                 if (layer != value)
                 {
                     layer = value;
-                    AddDelta(Delta.Ownership);
+                    delta |= Delta.Ownership;
                 }
             }
         }
@@ -66,7 +66,7 @@ namespace UOInterface
             sb.AppendFormat("Layer: {0}", Layer);
         }
 
-        public override bool Exists { get { return World.ContainsItem(Serial); } }
+        public override bool Exists { get { return World.Items.Contains(Serial); } }
         public bool OnGround { get { return !Container.IsValid; } }
         public Serial RootContainer
         {
@@ -74,7 +74,7 @@ namespace UOInterface
             {
                 Item item = this;
                 while (item.Container.IsItem)
-                    item = World.GetItem(item.Container);
+                    item = World.Items.Get(item.Container);
                 return item.Container.IsMobile ? item.Container : item;
             }
         }

@@ -18,10 +18,10 @@ namespace ObjectBrowser
 
             World.Cleared += (s, e) => AppendLine("World cleared.");
             World.MapChanged += (s, e) => AppendLine("Map changed.");
-            World.ItemsChanged += (s, e) => AppendLine(string.Format("ItemsChanged - {0} added, {1} removed.",
-                                                                        e.Added.Count, e.Removed.Count));
-            World.MobilesChanged += (s, e) => AppendLine(string.Format("MobilesChanged - {0} added, {1} removed.",
-                                                                        e.Added.Count, e.Removed.Count));
+            World.Items.Added += (s, e) => AppendLine(string.Format("Items added - {0}", e.Count));
+            World.Items.Removed += (s, e) => AppendLine(string.Format("Items removed - {0}", e.Count));
+            World.Mobiles.Added += (s, e) => AppendLine(string.Format("Mobiles added - {0}", e.Count));
+            World.Mobiles.Removed += (s, e) => AppendLine(string.Format("Mobiles removed - {0}", e.Count));
 
             Chat.Message += Chat_Message;
             Chat.LocalizedMessage += Chat_LocalizedMessage;

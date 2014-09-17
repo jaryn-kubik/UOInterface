@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Windows;
 using UOInterface;
 
@@ -13,7 +12,7 @@ namespace ObjectBrowser
             MainWindow window = new MainWindow();
 
             Client.UnhandledException += (s, e) => MessageBox.Show(e.ExceptionObject.ToString(), "Unhandled exception!");
-            Client.ServerIP = (uint)IPAddress.Parse("127.0.0.1").Address;
+            Client.ServerIP = 0x0100007F;
             Client.ServerPort = 2593;
             Client.PatchEncryption = true;
             Client.Start("C:\\UO\\Test\\client.exe");

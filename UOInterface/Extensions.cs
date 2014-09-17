@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace UOInterface
 {
@@ -16,17 +16,17 @@ namespace UOInterface
             if (handler != null)
                 handler(sender, e);
         }
-    }
 
-    public class CollectionChangedEventArgs<T> : EventArgs
-    {
-        public CollectionChangedEventArgs(IReadOnlyList<T> added, IReadOnlyList<T> removed)
+        public static void RaiseAsync(this EventHandler handler, object sender = null)
         {
-            Added = added;
-            Removed = removed;
+            if (handler != null)
+                Task.Run(() => handler(sender, EventArgs.Empty)).Catch();
         }
 
-        public IReadOnlyList<T> Added { get; private set; }
-        public IReadOnlyList<T> Removed { get; private set; }
+        public static void RaiseAsync<T>(this EventHandler<T> handler, T e, object sender = null)
+        {
+            if (handler != null)
+                Task.Run(() => handler(sender, e)).Catch();
+        }
     }
 }

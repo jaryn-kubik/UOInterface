@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UOInterface.Network;
 
 namespace UOInterface
@@ -8,7 +9,7 @@ namespace UOInterface
     {
         //sometimes child items are sent before parent containers...
         //no idea why, they like to make things complicated i guess
-        private static void ReadContainerContent(Packet p)
+        private static bool ReadContainerContent(Packet p)
         {
             Item item = GetOrCreateItem(p.ReadUInt());
             item.Graphic = (ushort)(p.ReadUShort() + p.ReadSByte());
@@ -19,14 +20,30 @@ namespace UOInterface
 
             item.Container = p.ReadUInt();
             item.Hue = p.ReadUShort();
-            toUpdate.Add(item);
-            toProcess.Enqueue(item);
+
+            Item entity = Items.Get(item.Container);
+            if (entity != null)
+            {
+                entity.Items.Add(item);
+                foreach (Item i in toAdd.Where(i => i.Container == item))
+                {
+                    item.Items.Add(i);
+                    Items.Add(i);
+                }
+                toAdd.ExceptWith(item.Items);
+                item.ProcessDelta();
+                entity.ProcessDelta();
+                return Items.Add(item);
+            }
+            toAdd.Add(item);
+            item.ProcessDelta();
+            return false;
         }
 
         private static void OnContainerContentUpdate(Packet p)//0x25
         {
-            ReadContainerContent(p);
-            ProcessDelta();
+            if (ReadContainerContent(p))
+                Items.ProcessDelta();
         }
 
         private static void OnContainerContent(Packet p)//0x3C
@@ -34,7 +51,7 @@ namespace UOInterface
             ushort count = p.ReadUShort();
             for (int i = 0; i < count; i++)
                 ReadContainerContent(p);
-            ProcessDelta();
+            Items.ProcessDelta();
         }
 
         private static void OnEquipUpdate(Packet p)//0x2E
@@ -45,9 +62,15 @@ namespace UOInterface
             item.Container = p.ReadUInt();
             item.Hue = p.ReadUShort();
             item.Amount = 1;
-            toUpdate.Add(item);
-            toProcess.Enqueue(item);
-            ProcessDelta();
+
+            Mobile mobile = Mobiles.Get(item.Container);
+            if (mobile != null)
+                mobile.Items.Add(item);
+            item.ProcessDelta();
+            if (Items.Add(item))
+                Items.ProcessDelta();
+            if (mobile != null)
+                mobile.ProcessDelta();
         }
 
         private static void OnWorldItem(Packet p)//0x1A
@@ -78,8 +101,9 @@ namespace UOInterface
                 item.Flags = (UOFlags)p.ReadByte();
 
             item.Container = Serial.Invalid;
-            toProcess.Enqueue(item);
-            ProcessDelta();
+            item.ProcessDelta();
+            if (Items.Add(item))
+                Items.ProcessDelta();
         }
 
         private static void OnWorldItemSA(Packet p)//0xF3
@@ -108,20 +132,20 @@ namespace UOInterface
                 p.ReadUShort();//unknown
 
             item.Container = Serial.Invalid;
-            toProcess.Enqueue(item);
-            ProcessDelta();
+            item.ProcessDelta();
+            if (Items.Add(item))
+                Items.ProcessDelta();
         }
 
         private static void OnProperties(Packet p) //0xD6
         {
             p.Skip(2);
-            Entity entity = GetEntity(p.ReadUInt());
+            Entity entity = Get(p.ReadUInt());
             if (entity == null)
                 return;
             p.Skip(6);
             entity.UpdateProperties(ReadProperties(p));
-            toProcess.Enqueue(entity);
-            ProcessDelta();
+            entity.ProcessDelta();
         }
 
         private static IEnumerable<Entity.UOProperty> ReadProperties(Packet p)
