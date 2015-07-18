@@ -4,10 +4,28 @@
 
 namespace Hooks
 {
+	bool pathfindingFilter;
 	UINT pathfindingType;
-	LPVOID pathfindingFunc;
+	BYTE *pathfindingOffset, *pathfindingNull;
+	LPVOID pathfindingFunc, pathfindingRet;
+	void __declspec(naked) PathfindingHook()
+	{
+		__asm
+		{
+			cmp		pathfindingFilter, 0;
+			jne		filter;
+			push	pathfindingOffset;
+			jmp		pathfindingRet;
+
+		filter:
+			push	pathfindingNull;
+			jmp		pathfindingRet;
+		}
+	}
+
 	bool HookPathfinding(Client &client)
 	{
+		BYTE pathfinding[13] = "Pathfinding!";
 		ud_instr sig1[] =
 		{
 			ud_instr{ UD_Imovsx, { ud_arg::reg(UD_R_EBP), ud_arg::mem(UD_R_EAX, 0x24) } },
@@ -24,6 +42,16 @@ namespace Hooks
 		};
 
 		int i;
+		if (client.Find(pathfinding, &pathfindingOffset))
+		{
+			ud_instr iPathfinding{ UD_Ipush, { ud_arg::imm((UINT)pathfindingOffset) } };
+			if (client.Find(iPathfinding, &i))
+			{
+				pathfindingNull = pathfindingOffset + 12;
+				pathfindingRet = client.Hook(i, PathfindingHook);
+			}
+		}
+
 		if (client.Find(sig1, &i))
 			pathfindingType = 1;
 		else if (client.Find(sig2, &i))
@@ -67,7 +95,9 @@ namespace Hooks
 		pathfindingData[0x12] = x;
 		pathfindingData[0x13] = y;
 		pathfindingData[0x14] = z;
+		pathfindingFilter = true;
 		Pathfind();
+		pathfindingFilter = false;
 	}
 	//---------------------------------------------------------------------------//
 	//---------------------------------------------------------------------------//
